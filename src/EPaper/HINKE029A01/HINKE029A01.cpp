@@ -104,6 +104,7 @@ bool HINKE029A01::WaitBUSY(uint32_t timeOut)
 
 void HINKE029A01::SetRamPointer(uint16_t addrX, uint8_t addrY, uint8_t addrY1)
 {
+    WaitBUSY();
     uint8_t RamPointerX[2]; // default (0,0)
     uint8_t RamPointerY[3];
     // Set RAM X address counter
@@ -124,6 +125,7 @@ void HINKE029A01::SetRamPointer(uint16_t addrX, uint8_t addrY, uint8_t addrY1)
 
 void HINKE029A01::SetRamArea(uint16_t Xstart, uint16_t Xend, uint8_t Ystart, uint8_t Ystart1, uint8_t Yend, uint8_t Yend1)
 {
+    WaitBUSY();
     uint8_t RamAreaX[3]; // X start and end
     uint8_t RamAreaY[5]; // Y start and end
     RamAreaX[0] = 0x44;  // command
@@ -152,11 +154,12 @@ void HINKE029A01::WriteDispRam(uint16_t XSize, uint16_t YSize, uint8_t *buffer, 
         for (int j = 0; j < XSize; j++)
         {
             SPIWrite(*buf);
-            // SPIWrite(0x11);
+            //SPIWrite(0x11);
             buf++;
         }
         buf += xDot / 8 - XSize;
     }
+    WaitBUSY();
     _EPD_CS_HIGH;
 }
 
@@ -178,10 +181,12 @@ bool HINKE029A01::DisplayFull(uint8_t *buffer)
     yStart = yDot - 1 - yEnd;
     yEnd = yDot - 1 - temp;
 
+    
     SetRamPointer(xStart / 8, yEnd % 256, yEnd / 256);
     SetRamArea(xStart, xEnd, yEnd % 256, yEnd / 256, yStart % 256, yStart / 256);
 
     WriteDispRam(xDot / 8, yDot, (uint8_t *)buffer, 0);
+    //WriteDispRam(xDot / 8, yDot, (uint8_t *)buffer, 0);
     uint32_t updateTime = millis();
     FullUpdate();
     if (WaitBUSY(20 * 1000ul) == true)
@@ -230,6 +235,6 @@ bool HINKE029A01::DisplayPart(uint16_t xStart, uint16_t xEnd, uint16_t yStart, u
         EPD_LOGI("Dispaly full is timeout,takes %ldms", millis() - updateTime);
         return false;
     }
-
+    SetRamPointer(xStart / 8, yEnd % 256, yEnd / 256);
     WriteDispRam(Xsize, Ysize, (uint8_t *)buffer, offset);
 }
