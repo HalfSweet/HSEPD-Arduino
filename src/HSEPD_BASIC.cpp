@@ -32,6 +32,11 @@ HSEPD_BASIC::~HSEPD_BASIC()
 {
 }
 
+void HSEPD_BASIC::DriveDelay(uint32_t ms)
+{
+    delay(ms);
+}
+
 void HSEPD_BASIC::SetMOSI()
 {
     if (_SPIMode == 1)
@@ -134,11 +139,7 @@ void HSEPD_BASIC::WriteCMDDATA(uint8_t *value, uint8_t Datalen)
         SPIWrite(*ptemp);
         ptemp++;
     }
-    WaitBUSY();
+    //WaitBUSY();
     _EPD_CS_HIGH;
 }
 
-bool HSEPD_BASIC::WaitBUSY(uint32_t timeOut)
-{
-    return true;
-}

@@ -89,7 +89,7 @@ static const char *EPDTAG = "HSEPD";
 
 class HSEPD_BASIC
 {
-private:
+protected:
     uint8_t _CS;
     uint8_t _RST;
     uint8_t _DC;
@@ -100,6 +100,8 @@ private:
 
     SPIClass *mySPI;
 
+    void DriveDelay(uint32_t ms);
+
     void SetMOSI();
     void SetMISO();
     void SPIWrite(uint8_t value);
@@ -108,13 +110,23 @@ private:
     void WriteDATA(uint8_t data);
     void WriteCMDDATA(uint8_t *value, uint8_t Datalen);
 
+    virtual bool WaitBUSY(uint32_t timeOut) = 0;
+    virtual void SetRamPointer(uint16_t addrX, uint8_t addrY, uint8_t addrY1) = 0;
+    virtual void SetRamArea(uint16_t Xstart, uint16_t Xend, uint8_t Ystart, uint8_t Ystart1, uint8_t Yend, uint8_t Yend1) = 0;
+    virtual void WriteDispRam(uint16_t XSize, uint16_t YSize, uint8_t *Dispbuff, uint16_t offset) = 0;
+
 public:
-    HSEPD_BASIC(bool SPIMode, uint8_t CS, uint8_t RST, uint8_t DC, uint8_t BUSY, uint8_t CLK, uint8_t DIN);
+    HSEPD_BASIC(bool SPIMode, uint8_t CS, uint8_t RST, uint8_t DC, uint8_t BUSY, uint8_t SCK, uint8_t SDA);
     ~HSEPD_BASIC();
     /********带virtual的均为在每个屏幕的类中实现的函数*********/
-    virtual void InitFull();
+    virtual void InitFull() = 0;
+    virtual void InitPart() = 0;
+    virtual void DeepSleep() = 0;
+    virtual bool DisplayFull(uint8_t *buffer) = 0;
+    virtual void FullUpdate() = 0;
+};
 
-protected:
-    /********带virtual的均为在每个屏幕的类中实现的函数*********/
-    virtual bool WaitBUSY(uint32_t timeOut = 200);
+enum class EPDType
+{
+    HINKE029A01 = 0,
 };
