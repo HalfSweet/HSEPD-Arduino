@@ -1,10 +1,10 @@
 #pragma once
 
 #include <Arduino.h>
-#include "HSEPD_BASIC.h"
+#include"HSEPD_GUI.h"
 #include "./EPaper/HINKE029A01/HINKE029A01.h"
 
-class HSEPD
+class HSEPD : public HSEPD_GUI
 {
 private:
     uint8_t _CS;
