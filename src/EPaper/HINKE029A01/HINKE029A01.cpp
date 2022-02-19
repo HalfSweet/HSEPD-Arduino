@@ -39,16 +39,21 @@ void HINKE029A01::Init()
     WriteCMD(0x11);
     WriteDATA(0x01);
 
-    WriteCMD(0x22);
+    /*WriteCMD(0x22);
     WriteDATA(0xC0);
 
-    WriteCMD(0x20);
+    WriteCMD(0x20);*/
 }
 
 void HINKE029A01::InitFull()
 {
     Init();
     WriteCMDDATA((uint8_t *)LUTDefault_full, sizeof(LUTDefault_full));
+
+    WriteCMD(0x22);
+    WriteDATA(0xC0);
+
+    WriteCMD(0x20);
     EPD_LOGD("Init full finish.");
 }
 
@@ -67,7 +72,7 @@ void HINKE029A01::InitPart()
 void HINKE029A01::FullUpdate()
 {
     WriteCMD(0x22);
-    WriteDATA(0x04);
+    WriteDATA(0xC7);
     WriteCMD(0x20);
 }
 

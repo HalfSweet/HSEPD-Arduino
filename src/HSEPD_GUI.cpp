@@ -26,12 +26,37 @@ bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin)
         EPD_LOGE("Your RAM is too low, please check it.");
         return false;
     }
-    _width = width;
-    _height = height;
+    switch (origin)
+    {
+    case ORIGIN::BL:
+    case ORIGIN::BottomLeft:
+    case ORIGIN::TR:
+    case ORIGIN::TopRight:
+        _width = height;
+        _height = width;
+        break;
+
+    case ORIGIN::BR:
+    case ORIGIN::BottomRight:
+    case ORIGIN::TL:
+    case ORIGIN::TopLeft:
+        _width = width;
+        _height = height;
+        break;
+
+    default:
+        break;
+    }
+
     SetOrigin(origin);
 
     EPD_LOGD("GUIBegin finish.");
     return true;
+}
+
+void HSEPD_GUI::GUIEnd()
+{
+    delete[] DisBuffer;
 }
 
 bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, COLOR color)
@@ -60,42 +85,36 @@ bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, COLOR color)
 
 bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
 {
-    uint16_t temp;
     switch (_origin)
     {
-    case ORIGIN::BL:
-    case ORIGIN::BottomLeft:
-        if (x >= _width || y >= _height)
-        {
-            EPD_LOGE("The coordinates you entered are outside the window.");
-            return false;
-        }
-        DrawAbsolutePixel(x, y, color);
-        break;
     case ORIGIN::TL:
     case ORIGIN::TopLeft:
-
-        if (x >= _height || y >= _width)
+        if (x >= _width || y >= _height)
         {
-            EPD_LOGE("The coordinates you entered are outside the window.");
+            //EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
-        temp = x;
-        x = y;
-        y = _height - temp;
-        DrawAbsolutePixel(x, y, color);
+        DrawAbsolutePixel(x, _height - y, color);
+        break;
+
+    case ORIGIN::BL:
+    case ORIGIN::BottomLeft:
+        if (x >= _height || y >= _height)
+        {
+            //EPD_LOGE("The coordinates you entered are outside the window.");
+            return false;
+        }
+        DrawAbsolutePixel(y, x, color);
         break;
 
     case ORIGIN::TR:
     case ORIGIN::TopRight:
         if (x >= _width || y >= _height)
         {
-            EPD_LOGE("The coordinates you entered are outside the window.");
+            //EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
-        x = _width - x;
-        y = _height - y;
-        DrawAbsolutePixel(x, y, color);
+        DrawAbsolutePixel(_width - y, _height - x, color);
         break;
 
     case ORIGIN::BR:
@@ -103,13 +122,10 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
 
         if (x >= _height || y >= _width)
         {
-            EPD_LOGE("The coordinates you entered are outside the window.");
+            //EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
-        temp = x;
-        x = _width - y;
-        y = temp;
-        DrawAbsolutePixel(x, y, color);
+        DrawAbsolutePixel(_width - x, y, color);
         break;
 
     default:
@@ -132,15 +148,18 @@ void HSEPD_GUI::ClearBuffer()
 bool HSEPD_GUI::DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color)
 {
     /* Bresenham algorithm */
-    int dx = x1 - x0 >= 0 ? x1 - x0 : x0 - x1;
-    int sx = x0 < x1 ? 1 : -1;
-    int dy = y1 - y0 <= 0 ? y1 - y0 : y0 - y1;
-    int sy = y0 < y1 ? 1 : -1;
-    int err = dx + dy;
+    int16_t dx = x1 - x0 >= 0 ? x1 - x0 : x0 - x1;
+    int8_t sx = x0 < x1 ? 1 : -1;
+    int16_t dy = y1 - y0 <= 0 ? y1 - y0 : y0 - y1;
+    int8_t sy = y0 < y1 ? 1 : -1;
+    int16_t err = dx + dy;
 
     while ((x0 != x1) && (y0 != y1))
     {
-        DrawPixel(x0, y0, color);
+        if(DrawPixel(x0, y0, color) == false)
+        {
+            EPD_LOGE("The coordinates you entered are outside the window.");
+        }
         if (2 * err >= dy)
         {
             err += dy;
@@ -153,7 +172,7 @@ bool HSEPD_GUI::DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COL
         }
     }
 
-    EPD_LOGV("Draw line finish.");
+    EPD_LOGD("Draw line finish.");
     return true;
 }
 
@@ -167,17 +186,19 @@ bool HSEPD_GUI::DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0,
         {
             if (DrawPixel(move0, fixed, color) == false)
             {
+                EPD_LOGE("The coordinates you entered are outside the window.");
                 return false;
             }
-            EPD_LOGV("Draw straight line finish.");
+            EPD_LOGD("Draw straight line finish.");
             return true;
         }
         for (size_t i = 0; i < lineWeidth; i++)
         {
             for (size_t j = moveMin; j < moveMax; j++)
             {
-                if(DrawPixel(j, fixed + i, color) == false)
+                if (DrawPixel(j, fixed + i, color) == false)
                 {
+                    EPD_LOGE("The coordinates you entered are outside the window.");
                     return false;
                 }
             }
@@ -189,25 +210,27 @@ bool HSEPD_GUI::DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0,
         {
             if (DrawPixel(fixed, move0, color) == false)
             {
+                EPD_LOGE("The coordinates you entered are outside the window.");
                 return false;
             }
-            EPD_LOGV("Draw straight line finish.");
+            EPD_LOGD("Draw straight line finish.");
             return true;
         }
-        
+
         for (size_t i = 0; i < lineWeidth; i++)
         {
-            for (size_t j = moveMin ; j < moveMax; j++)
+            for (size_t j = moveMin; j < moveMax; j++)
             {
-                if(DrawPixel(fixed + i, j, color) == false)
+                if (DrawPixel(fixed + i, j, color) == false)
                 {
+                    EPD_LOGE("The coordinates you entered are outside the window.");
                     return false;
                 }
             }
         }
     }
 
-    EPD_LOGV("Draw straight line finish.");
+    EPD_LOGD("Draw straight line finish.");
     return true;
 }
 
@@ -217,7 +240,7 @@ bool HSEPD_GUI::DrawSolidBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t h
     {
         return false;
     }
-    EPD_LOGV("Draw Solid Box finish.");
+    EPD_LOGD("Draw Solid Box finish.");
     return true;
 }
 
@@ -228,9 +251,64 @@ bool HSEPD_GUI::DrawHollowBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t 
         EPD_LOGE("Stupid human, are you kidding me?");
         return false;
     }
-    DrawSolidBox(x, y, weidth, height, COLOR::black);
+    if(DrawSolidBox(x, y, weidth, height, COLOR::black))
+    {
+        return false;
+    }
     DrawSolidBox(x + lineWeidth, y + lineWeidth, weidth - 2 * lineWeidth, height - 2 * lineWeidth, COLOR::write);
 
-    EPD_LOGV("Draw Hollow Box finish.");
+    EPD_LOGD("Draw Hollow Box finish.");
+    return true;
+}
+
+bool HSEPD_GUI::DrawSoildCircle(uint16_t x, uint16_t y, uint16_t radius, COLOR color)
+{
+    /* Bresenham algorithm */
+    int32_t x_pos = -radius;
+    int32_t y_pos = 0;
+    int32_t err = 2 - 2 * radius;
+    int32_t e2 = err;
+    bool error = 0;
+
+    while (x_pos <= 0)
+    {
+        error += !DrawPixel(x - x_pos, y + y_pos, color);
+        error += !DrawPixel(x + x_pos, y + y_pos, color);
+        error += !DrawPixel(x + x_pos, y - y_pos, color);
+        error += !DrawPixel(x - x_pos, y - y_pos, color);
+
+        DrawStraightLine(0, y + y_pos, x + x_pos, x + x_pos + 2 * (-x_pos) + 1, 1, color);
+        DrawStraightLine(0, y - y_pos, x + x_pos, x + x_pos + 2 * (-x_pos) + 1, 1, color);
+        e2 = err;
+        if (e2 <= y_pos)
+        {
+            err += ++y_pos * 2 + 1;
+            if (-x_pos == y_pos && e2 <= x_pos)
+            {
+                e2 = 0;
+            }
+        }
+        if (e2 > x_pos)
+        {
+            err += ++x_pos * 2 + 1;
+        }
+    }
+    if (error == 1)
+    {
+        EPD_LOGE("The coordinates you entered are outside the window.");
+        return false;
+    }
+
+    EPD_LOGD("Draw soild circle finish.");
+    return true;
+}
+
+bool HSEPD_GUI::DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius,uint16_t lineWeidth)
+{
+    if(DrawSoildCircle(x,y,radius,COLOR::black) == false)
+    {
+        return false;
+    }
+    DrawSoildCircle(x , y , radius - 2 * lineWeidth, COLOR::write);
     return true;
 }
