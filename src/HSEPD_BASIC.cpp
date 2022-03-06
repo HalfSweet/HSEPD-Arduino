@@ -41,7 +41,7 @@ void HSEPD_BASIC::SetMOSI()
 {
     if (_SPIMode == 1)
     {
-        mySPI->begin();
+        EPDSPI->begin();
     }
     else
     {
@@ -54,7 +54,7 @@ void HSEPD_BASIC::SetMISO()
 {
     if (_SPIMode == 1)
     {
-        mySPI->end();
+        EPDSPI->end();
     }
     pinMode(_SDA, INPUT);
     pinMode(_SCK, OUTPUT);
@@ -65,7 +65,7 @@ void HSEPD_BASIC::SPIWrite(uint8_t value)
 {
     if (_SPIMode == 1)
     {
-        mySPI->transfer(value);
+        EPDSPI->transfer(value);
     }
     else
     {
@@ -143,3 +143,7 @@ void HSEPD_BASIC::WriteCMDDATA(uint8_t *value, uint8_t Datalen)
     _EPD_CS_HIGH;
 }
 
+void HSEPD_BASIC::SetHardSPI(SPIClass *spi)
+{
+    EPDSPI = spi;
+}

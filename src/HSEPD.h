@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include"HSEPD_GUI.h"
+#include "HSEPD_GUI.h"
 #include "./EPaper/HINKE029A01/HINKE029A01.h"
 
 class HSEPD : public HSEPD_GUI
@@ -22,8 +22,9 @@ public:
     ~HSEPD();
 
     void SetEpaperType(EPDType type);
+    void SetHardSPI(SPIClass *spi);
     void InitFull();
     void InitPart();
     void DeepSleep();
-    bool DisplayFull(uint8_t * buffer);
+    bool DisplayFull(uint8_t *buffer);
 };

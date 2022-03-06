@@ -18,6 +18,11 @@ ORIGIN HSEPD_GUI::GetOrigin()
     return _origin;
 }
 
+void HSEPD_GUI::SetFS(fs::FS *fs)
+{
+    EPDFs = fs;
+}
+
 bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin)
 {
     DisBuffer = new (std::nothrow) uint8_t[width * height / 8];
@@ -91,7 +96,7 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
     case ORIGIN::TopLeft:
         if (x >= _width || y >= _height)
         {
-            //EPD_LOGE("The coordinates you entered are outside the window.");
+            // EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
         DrawAbsolutePixel(x, _height - y, color);
@@ -101,7 +106,7 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
     case ORIGIN::BottomLeft:
         if (x >= _height || y >= _height)
         {
-            //EPD_LOGE("The coordinates you entered are outside the window.");
+            // EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
         DrawAbsolutePixel(y, x, color);
@@ -111,7 +116,7 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
     case ORIGIN::TopRight:
         if (x >= _width || y >= _height)
         {
-            //EPD_LOGE("The coordinates you entered are outside the window.");
+            // EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
         DrawAbsolutePixel(_width - y, _height - x, color);
@@ -122,7 +127,7 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
 
         if (x >= _height || y >= _width)
         {
-            //EPD_LOGE("The coordinates you entered are outside the window.");
+            // EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
         DrawAbsolutePixel(_width - x, y, color);
@@ -156,7 +161,7 @@ bool HSEPD_GUI::DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COL
 
     while ((x0 != x1) && (y0 != y1))
     {
-        if(DrawPixel(x0, y0, color) == false)
+        if (DrawPixel(x0, y0, color) == false)
         {
             EPD_LOGE("The coordinates you entered are outside the window.");
         }
@@ -251,7 +256,7 @@ bool HSEPD_GUI::DrawHollowBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t 
         EPD_LOGE("Stupid human, are you kidding me?");
         return false;
     }
-    if(DrawSolidBox(x, y, weidth, height, COLOR::black))
+    if (DrawSolidBox(x, y, weidth, height, COLOR::black))
     {
         return false;
     }
@@ -303,12 +308,130 @@ bool HSEPD_GUI::DrawSoildCircle(uint16_t x, uint16_t y, uint16_t radius, COLOR c
     return true;
 }
 
-bool HSEPD_GUI::DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius,uint16_t lineWeidth)
+bool HSEPD_GUI::DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, uint16_t lineWeidth)
 {
-    if(DrawSoildCircle(x,y,radius,COLOR::black) == false)
+    if (DrawSoildCircle(x, y, radius, COLOR::black) == false)
     {
         return false;
     }
-    DrawSoildCircle(x , y , radius - 2 * lineWeidth, COLOR::write);
+    DrawSoildCircle(x, y, radius - 2 * lineWeidth, COLOR::write);
     return true;
+}
+
+bool HSEPD_GUI::DrawImageArr(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t *image)
+{
+    uint8_t px = 0;
+    for (size_t cx = 0; cx < width; cx++)
+    {
+        for (size_t cy = 0; cy < height; cy++)
+        {
+            if (cy % 8 == 0)
+            {
+                px = *image;
+                image++;
+            }
+            if ((px & (0x01 << (7 - (cy % 8)))) >> (7 - (cy % 8)) == 1) //不要吐槽为什么那么长，看懂就行
+            {
+                if (DrawPixel(x + cx, y + cy) == false)
+                {
+                    EPD_LOGW("Draw image fail.");
+                    return false;
+                }
+            }
+        }
+    }
+
+    EPD_LOGD("Draw image success.");
+    return true;
+}
+
+void HSEPD_GUI::FontBegin(const char *fontIndex, bool variable, uint8_t height, uint8_t width) // variable为0说明是固定宽度，是1说明是可变宽度
+{
+    _fontIndex = fontIndex;
+    _fontHeight = height;
+    _fontVariable = variable;
+    _fontWidth = width;
+}
+
+int HSEPD_GUI::printf(uint16_t x, uint16_t y, const char *format, ...)
+{
+    uint16_t fontX = x;
+    uint16_t fontY = y;
+
+    va_list vp;
+    va_start(vp, format);
+
+    char *pfmt = const_cast<char *>(format);
+
+    while (*pfmt)
+    {
+        if (*pfmt == '%')
+        {
+            pfmt++;
+            switch (*pfmt)
+            {
+            case 'c':
+                char ch = va_arg(vp, int);
+                int i;
+                EPD_LOGV("fontX:%d,fontY:%d",fontX,fontY);
+                i = putchar(fontX, fontY, ch);
+                if (i != -1)
+                {
+                    fontX += i;
+                }
+                break;
+
+                // default:
+                // break;
+            }
+            pfmt++;
+        }
+    }
+    va_end(vp);
+    return 0;
+}
+
+int HSEPD_GUI::putchar(uint16_t x, uint16_t y, char ch)
+{
+    uint16_t charSize;
+    uint16_t offset;
+    uint8_t fontWidth;
+    if (_fontHeight % 8 == 0)
+    {
+        charSize = (_fontHeight / 8) * _fontWidth;
+    }
+    else
+    {
+        charSize = (_fontHeight / 8 + 1) * _fontWidth;
+    }
+    if (_fontVariable == 1)
+    {
+        charSize += 2; //前两字节存放宽度信息
+    }
+    offset = ch * charSize;
+    File f = EPDFs->open(_fontIndex, "r");
+    f.seek(offset, SeekSet);
+    uint8_t *data = new uint8_t[charSize];
+    f.read(data, charSize);
+    if (_fontVariable == 1)
+    {
+        fontWidth = *(data + 1); //默认不支持255像素以上的字体
+        if (DrawImageArr(x, y, fontWidth, _fontHeight, data + 2) == false)
+        {
+            EPD_LOGW("Draw char fail.");
+            return -1;
+        }
+    }
+    else
+    {
+        fontWidth = _fontWidth;
+        if (DrawImageArr(x, y, _fontWidth, _fontHeight, data) == false)
+        {
+            EPD_LOGW("Draw char fail.");
+            return -1;
+        }
+    }
+    delete[] data;
+    EPD_LOGD("Draw char success.");
+    return fontWidth;
 }

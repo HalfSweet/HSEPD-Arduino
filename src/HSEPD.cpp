@@ -49,3 +49,8 @@ bool HSEPD::DisplayFull(uint8_t *buffer)
 {
     return epd->DisplayFull(buffer);
 }
+
+void HSEPD::SetHardSPI(SPIClass *spi)
+{
+    return epd->SetHardSPI(spi);
+}

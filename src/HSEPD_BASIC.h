@@ -1,7 +1,9 @@
 #pragma once
 
 #include <Arduino.h>
+#ifndef NOT_USE_HARD_SPI
 #include <SPI.h>
+#endif // !NOT_USE_HARD_SPI
 
 #define DEBUG_ESP_PORT Serial //调试用，记得删
 #define DEBUG_ESP_CORE
@@ -98,7 +100,9 @@ protected:
     uint8_t _SDA;
     bool _SPIMode;
 
-    SPIClass *mySPI;
+#ifndef NOT_USE_HARD_SPI
+    SPIClass *EPDSPI;
+#endif // !NOT_USE_HARD_SPI
 
     void DriveDelay(uint32_t ms);
 
@@ -118,6 +122,7 @@ protected:
 public:
     HSEPD_BASIC(bool SPIMode, uint8_t CS, uint8_t RST, uint8_t DC, uint8_t BUSY, uint8_t SCK, uint8_t SDA);
     ~HSEPD_BASIC();
+    void SetHardSPI(SPIClass *spi);
     /********带virtual的均为在每个屏幕的类中实现的函数*********/
     virtual void InitFull() = 0;
     virtual void InitPart() = 0;
