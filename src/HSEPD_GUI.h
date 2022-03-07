@@ -33,6 +33,8 @@ private:
 #endif // !NOT_USE_FS
     uint16_t _width;
     uint16_t _height;
+    uint16_t _realWidth; //这两个都是真实的“窗口”的长宽
+    uint16_t _realHeight;
 
     ORIGIN _origin;
 
@@ -42,7 +44,30 @@ private:
     const char* _fontIndex;
 
     bool DrawAbsolutePixel(uint16_t x, uint16_t y, COLOR color = COLOR::black);
-   
+
+    int8_t UTF8toUNICODE(const uint8_t* utf8,uint16_t* unicode);
+    
+    /**
+     * @brief 在屏幕缓存中画一个字符
+     * 
+     * @param x 开始的x坐标
+     * @param y 开始的y坐标
+     * @param ch 打印的字符编码（Unicode，且最大为0xFFFF）
+     * @return int 绘制的该字符的宽度
+     */
+    int putchar(uint16_t x, uint16_t y,uint16_t ch); 
+
+    /**
+     * @brief 在屏幕缓存中画一个字符串
+     * 
+     * @param x 开始的x坐标（传入的是指针，因此绘制结束之后光标位置也会改变）
+     * @param y 开始的y坐标（传入的是指针，因此绘制结束之后光标位置也会改变）
+     * @param str 需要打印的字符串
+     * @param nor 控制是否不打印%开头（用于printf中打印一般的字符串）
+     * @return int 这个字符串中的uint8_t的个数
+     */
+    int putstr(uint16_t* x, uint16_t* y,const char *str,bool nor = 0);
+
 
 public:
     uint8_t *DisBuffer;
@@ -67,5 +92,5 @@ public:
     bool DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, uint16_t lineWeidth = 1);
     bool DrawImageArr(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t *image);
 
-     int putchar(uint16_t x, uint16_t y,char ch);
+     
 };

@@ -54,6 +54,8 @@ bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin)
     }
 
     SetOrigin(origin);
+    _realWidth = width;
+    _realHeight = height;
 
     EPD_LOGD("GUIBegin finish.");
     return true;
@@ -345,6 +347,39 @@ bool HSEPD_GUI::DrawImageArr(uint16_t x, uint16_t y, uint16_t width, uint16_t he
     return true;
 }
 
+int8_t HSEPD_GUI::UTF8toUNICODE(const uint8_t *utf8, uint16_t *unicode)
+{
+    if (*utf8 <= 0x7F) // ascii
+    {
+        *unicode = *utf8;
+        return 1;
+    }
+    else if ((*utf8 & 0xE0) == 0xC0) //双字节
+    {
+        //需要注意的是，在低字节 & 0xC0 的结果不为0x80的话，这是一个不合法的UTF8字符串，这里直接返回"\0"，希望用户别瞎往里传参
+        if ((*(utf8 + 1) & 0xC0) != 0x80)
+        {
+            return -1;
+        }
+        *unicode = (((*utf8 >> 2) & 0x07) << 8) + (uint8_t((*utf8 << 6) + (*(utf8 + 1) & 0x3F))); //别问我为啥这么写，懒。不爽的话你来打我啊
+        return 2;
+    }
+    else if ((*utf8 & 0xF0) == 0xE0) //三字节
+    {
+        //同理，在第二和第三个字节 & 0xC0 的结果不为0x80的话，该字符串不合法
+        if ((*(utf8 + 1) & 0xC0) != 0x80 || (*(utf8 + 2) & 0xC0) != 0x80)
+        {
+            return -1;
+        }
+        *unicode = (((*utf8 << 4) + (((*(utf8 + 1) >> 2) & 0x0F))) << 8) + (uint8_t((*(utf8 + 1) << 6) + (*(utf8 + 2) & 0x7F)));
+        return 3;
+    }
+    else //还想有四字节？爬！只支持最大0xFFFF的Unicode字符。如果你不想有这个限制，请速速来帮我写取模软件
+    {
+        return -1;
+    }
+}
+
 void HSEPD_GUI::FontBegin(const char *fontIndex, bool variable, uint8_t height, uint8_t width) // variable为0说明是固定宽度，是1说明是可变宽度
 {
     _fontIndex = fontIndex;
@@ -363,17 +398,19 @@ int HSEPD_GUI::printf(uint16_t x, uint16_t y, const char *format, ...)
 
     char *pfmt = const_cast<char *>(format);
 
+    uint16_t ch; //这是%c的情况下
+    char *pch;   //这是%s的情况下
+
     while (*pfmt)
     {
-        if (*pfmt == '%')
+        if (*pfmt == '%') //如果是正常的格式化控制符
         {
             pfmt++;
             switch (*pfmt)
             {
             case 'c':
-                char ch = va_arg(vp, int);
+                ch = va_arg(vp, int);
                 int i;
-                EPD_LOGV("fontX:%d,fontY:%d",fontX,fontY);
                 i = putchar(fontX, fontY, ch);
                 if (i != -1)
                 {
@@ -381,20 +418,30 @@ int HSEPD_GUI::printf(uint16_t x, uint16_t y, const char *format, ...)
                 }
                 break;
 
+            case 's':
+                pch = va_arg(vp, char *);
+                EPD_LOGV("printf str fontX:%d,fontY:%d", fontX, fontY);
+                putstr(&fontX, &fontY, pch);
+                break;
+
                 // default:
                 // break;
             }
             pfmt++;
+        }
+        else //不是格式化控制符，就是普通字符串
+        {
+            pfmt += putstr(&fontX, &fontY, pfmt, 1);
         }
     }
     va_end(vp);
     return 0;
 }
 
-int HSEPD_GUI::putchar(uint16_t x, uint16_t y, char ch)
+int HSEPD_GUI::putchar(uint16_t x, uint16_t y, uint16_t ch)
 {
     uint16_t charSize;
-    uint16_t offset;
+    uint32_t offset;
     uint8_t fontWidth;
     if (_fontHeight % 8 == 0)
     {
@@ -409,6 +456,7 @@ int HSEPD_GUI::putchar(uint16_t x, uint16_t y, char ch)
         charSize += 2; //前两字节存放宽度信息
     }
     offset = ch * charSize;
+    // EPD_LOGV("offset:%d",offset);
     File f = EPDFs->open(_fontIndex, "r");
     f.seek(offset, SeekSet);
     uint8_t *data = new uint8_t[charSize];
@@ -432,6 +480,56 @@ int HSEPD_GUI::putchar(uint16_t x, uint16_t y, char ch)
         }
     }
     delete[] data;
-    EPD_LOGD("Draw char success.");
+    // EPD_LOGD("Draw char success.");
     return fontWidth;
+}
+
+int HSEPD_GUI::putstr(uint16_t *x, uint16_t *y, const char *str, bool nor)
+{
+    uint16_t disX = *x;
+    uint16_t disY = *y;
+    uint16_t unicodeCode = 0;
+    int charNum = 0;
+    uint32_t charSum = 0;
+    uint16_t strWidth = 0;
+    while (*str)
+    {
+        if (nor == 1)
+        {
+            if (*str == '%')
+            {
+                *x = disX;
+                *y = disY;
+                return charSum;
+            }
+        }
+        charNum = UTF8toUNICODE((uint8_t *)str, &unicodeCode);
+        charSum += charNum;
+        if (charNum == -1)
+        {
+            EPD_LOGW("Your string is not valid");
+            return charSum;
+        }
+        strWidth = putchar(disX, disY, unicodeCode);
+        if (disX + strWidth >= _realWidth) //如果已经没有位置塞下新的一个字符了,那就换行
+        {
+            disX = *x;
+            if (disY + _fontHeight > _realHeight) //如果换行之后发现还是塞不下
+            {
+                EPD_LOGW("You don't have enough screen space to show the next character.");
+                return charSum;
+            }
+            disY += _fontHeight;
+            //EPD_LOGV("换行");
+        }
+        else
+        {
+            disX += strWidth;
+        }
+        str += charNum;
+    }
+    *x = disX;
+    *y = disY;
+    EPD_LOGD("Draw string success.");
+    return charSum;
 }
