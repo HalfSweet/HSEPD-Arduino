@@ -385,6 +385,12 @@ void HSEPD_GUI::SetPrintfBufferLen(uint16_t printfBufferLen)
     _printfBufferLen = printfBufferLen;
 }
 
+void HSEPD_GUI::SetStreamCursor(uint16_t x, uint16_t y)
+{
+    _streamCursorX = x;
+    _streamCursorY = y;
+}
+
 void HSEPD_GUI::FontBegin(const char *fontIndex, bool variable, uint8_t height, uint8_t width) // variable为0说明是固定宽度，是1说明是可变宽度
 {
     _fontIndex = fontIndex;
@@ -503,3 +509,4 @@ int HSEPD_GUI::putstr(uint16_t *x, uint16_t *y, const char *str, bool nor)
     EPD_LOGD("Draw string success.");
     return charSum;
 }
+
