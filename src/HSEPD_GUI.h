@@ -43,6 +43,8 @@ private:
     bool _fontVariable;
     const char* _fontIndex;
 
+    uint16_t _printfBufferLen = 64;
+
     bool DrawAbsolutePixel(uint16_t x, uint16_t y, COLOR color = COLOR::black);
 
     int8_t UTF8toUNICODE(const uint8_t* utf8,uint16_t* unicode);
@@ -68,6 +70,7 @@ private:
      */
     int putstr(uint16_t* x, uint16_t* y,const char *str,bool nor = 0);
 
+    
 
 public:
     uint8_t *DisBuffer;
@@ -81,6 +84,7 @@ public:
     void GUIEnd();
     void ClearBuffer();
     void FontBegin(const char* fontIndex, bool variable, uint8_t height, uint8_t width);
+    void SetPrintfBufferLen(uint16_t printfBufferLen);
     //void FontEnd();
     int printf(uint16_t x, uint16_t y,const char* format,...);
     bool DrawPixel(uint16_t x, uint16_t y, COLOR color = COLOR::black);
@@ -92,5 +96,4 @@ public:
     bool DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, uint16_t lineWeidth = 1);
     bool DrawImageArr(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t *image);
 
-     
 };

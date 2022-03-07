@@ -380,6 +380,11 @@ int8_t HSEPD_GUI::UTF8toUNICODE(const uint8_t *utf8, uint16_t *unicode)
     }
 }
 
+void HSEPD_GUI::SetPrintfBufferLen(uint16_t printfBufferLen)
+{
+    _printfBufferLen = printfBufferLen;
+}
+
 void HSEPD_GUI::FontBegin(const char *fontIndex, bool variable, uint8_t height, uint8_t width) // variable为0说明是固定宽度，是1说明是可变宽度
 {
     _fontIndex = fontIndex;
@@ -390,52 +395,17 @@ void HSEPD_GUI::FontBegin(const char *fontIndex, bool variable, uint8_t height, 
 
 int HSEPD_GUI::printf(uint16_t x, uint16_t y, const char *format, ...)
 {
-    uint16_t fontX = x;
-    uint16_t fontY = y;
+    size_t num;
+    va_list arg;
+    va_start(arg, format);
+    char *str = new char[_printfBufferLen]; //字符串缓冲区大小，默认64
+    num = vsnprintf(str, _printfBufferLen, format, arg);
+    va_end(arg);
+    putstr(&x, &y, str);
+    delete[] str;
 
-    va_list vp;
-    va_start(vp, format);
-
-    char *pfmt = const_cast<char *>(format);
-
-    uint16_t ch; //这是%c的情况下
-    char *pch;   //这是%s的情况下
-
-    while (*pfmt)
-    {
-        if (*pfmt == '%') //如果是正常的格式化控制符
-        {
-            pfmt++;
-            switch (*pfmt)
-            {
-            case 'c':
-                ch = va_arg(vp, int);
-                int i;
-                i = putchar(fontX, fontY, ch);
-                if (i != -1)
-                {
-                    fontX += i;
-                }
-                break;
-
-            case 's':
-                pch = va_arg(vp, char *);
-                EPD_LOGV("printf str fontX:%d,fontY:%d", fontX, fontY);
-                putstr(&fontX, &fontY, pch);
-                break;
-
-                // default:
-                // break;
-            }
-            pfmt++;
-        }
-        else //不是格式化控制符，就是普通字符串
-        {
-            pfmt += putstr(&fontX, &fontY, pfmt, 1);
-        }
-    }
-    va_end(vp);
-    return 0;
+    EPD_LOGD("Printf is success.");
+    return num;
 }
 
 int HSEPD_GUI::putchar(uint16_t x, uint16_t y, uint16_t ch)
@@ -520,7 +490,7 @@ int HSEPD_GUI::putstr(uint16_t *x, uint16_t *y, const char *str, bool nor)
                 return charSum;
             }
             disY += _fontHeight;
-            //EPD_LOGV("换行");
+            // EPD_LOGV("换行");
         }
         else
         {
