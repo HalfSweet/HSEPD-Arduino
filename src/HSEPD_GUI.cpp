@@ -8,6 +8,59 @@ HSEPD_GUI::~HSEPD_GUI()
 {
 }
 
+bool HSEPD_GUI::ToRealPixel(uint16_t x, uint16_t y, uint16_t &realX, uint16_t &realY)
+{
+    switch (_origin)
+    {
+    case ORIGIN::TL:
+    case ORIGIN::TopLeft:
+        if (x >= _width || y >= _height)
+        {
+            return false;
+        }
+        realX = x;
+        realY = _height - y - 1;
+        break;
+
+    case ORIGIN::BL:
+    case ORIGIN::BottomLeft:
+        if (x >= _height || y >= _height)
+        {
+            return false;
+        }
+        realX = y;
+        realY = x;
+        break;
+
+    case ORIGIN::TR:
+    case ORIGIN::TopRight:
+        if (x >= _width || y >= _height)
+        {
+            return false;
+        }
+        realX = _width - y - 1;
+        realY =  _height - x - 1;
+        break;
+
+    case ORIGIN::BR:
+    case ORIGIN::BottomRight:
+
+        if (x >= _height || y >= _width)
+        {
+            return false;
+        }
+        realX = _width - x - 1;
+        realY = y;
+        break;
+
+    default:
+        EPD_LOGW("Please enter correct coordinates.");
+        return false;
+        break;
+    }
+    return true;
+}
+
 void HSEPD_GUI::SetOrigin(ORIGIN origin)
 {
     _origin = origin;
@@ -25,7 +78,17 @@ void HSEPD_GUI::SetFS(fs::FS *fs)
 
 bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin)
 {
-    DisBuffer = new (std::nothrow) uint8_t[width * height / 8];
+    uint32_t pixel;
+    if (height % 8 == 0)
+    {
+        pixel = (height / 8) * width;
+    }
+    else
+    {
+        pixel = (height / 8 + 1) * width;
+    }
+
+    DisBuffer = new (std::nothrow) uint8_t[pixel];
     if (DisBuffer == nullptr)
     {
         EPD_LOGE("Your RAM is too low, please check it.");
@@ -92,6 +155,8 @@ bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, COLOR color)
 
 bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
 {
+    //bool flag;
+    /*
     switch (_origin)
     {
     case ORIGIN::TL:
@@ -101,7 +166,7 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
             // EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
-        DrawAbsolutePixel(x, _height - y, color);
+        flag = DrawAbsolutePixel(x, _height - y - 1, color);
         break;
 
     case ORIGIN::BL:
@@ -111,7 +176,7 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
             // EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
-        DrawAbsolutePixel(y, x, color);
+        flag = DrawAbsolutePixel(y, x, color);
         break;
 
     case ORIGIN::TR:
@@ -121,7 +186,7 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
             // EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
-        DrawAbsolutePixel(_width - y, _height - x, color);
+        flag = DrawAbsolutePixel(_width - y - 1, _height - x - 1, color);
         break;
 
     case ORIGIN::BR:
@@ -132,7 +197,7 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
             // EPD_LOGE("The coordinates you entered are outside the window.");
             return false;
         }
-        DrawAbsolutePixel(_width - x, y, color);
+        flag = DrawAbsolutePixel(_width - x - 1, y, color);
         break;
 
     default:
@@ -141,7 +206,12 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
         break;
     }
     // EPD_LOGV("Draw pixel finish.");
-    return true;
+    return flag;
+    */
+    uint16_t realX;
+    uint16_t realY;
+    ToRealPixel(x, y, realX, realY);
+    return DrawAbsolutePixel(realX, realY, color);
 }
 
 void HSEPD_GUI::ClearBuffer()
@@ -243,7 +313,7 @@ bool HSEPD_GUI::DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0,
 
 bool HSEPD_GUI::DrawSolidBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, COLOR color)
 {
-    if (DrawStraightLine(1, x, y, y + height - 1, weidth, color))
+    if (DrawStraightLine(1, x, y, y + height, weidth, color))
     {
         return false;
     }
@@ -509,4 +579,3 @@ int HSEPD_GUI::putstr(uint16_t *x, uint16_t *y, const char *str, bool nor)
     EPD_LOGD("Draw string success.");
     return charSum;
 }
-

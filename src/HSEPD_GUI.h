@@ -26,6 +26,11 @@ enum class COLOR
 
 class HSEPD_GUI
 {
+protected:
+    ORIGIN _origin;
+
+    bool ToRealPixel(uint16_t x, uint16_t y, uint16_t &realX, uint16_t &realY);
+
 private:
 /* data */
 #ifndef NOT_USE_FS
@@ -35,8 +40,6 @@ private:
     uint16_t _height;
     uint16_t _realWidth; //这两个都是真实的“窗口”的长宽
     uint16_t _realHeight;
-
-    ORIGIN _origin;
 
     uint8_t _fontWidth;
     uint8_t _fontHeight;

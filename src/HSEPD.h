@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "HSEPD_GUI.h"
 #include "./EPaper/HINKE029A01/HINKE029A01.h"
+#include "./EPaper/HINKE029A10/HINKE029A10.h"
 
 class HSEPD : public HSEPD_GUI
 {
@@ -23,8 +24,8 @@ public:
 
     void SetEpaperType(EPDType type);
     void SetHardSPI(SPIClass *spi);
-    void InitFull();
-    void InitPart();
+    void Init(DisMode disMode = DisMode::Full);
     void DeepSleep();
-    bool DisplayFull(uint8_t *buffer);
+    bool Display(uint8_t *buffer, uint16_t xStart = 0, uint16_t xEnd = 0, uint16_t yStart = 0, uint16_t yEnd = 0);
+
 };

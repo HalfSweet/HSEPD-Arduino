@@ -30,14 +30,14 @@ void HSEPD::SetEpaperType(EPDType type)
     }
 }
 
-void HSEPD::InitFull()
+void HSEPD::SetHardSPI(SPIClass *spi)
 {
-    return epd->InitFull();
+    return epd->SetHardSPI(spi);
 }
 
-void HSEPD::InitPart()
+void HSEPD::Init(DisMode disMode)
 {
-    return epd->InitPart();
+    return epd->Init(disMode);
 }
 
 void HSEPD::DeepSleep()
@@ -45,12 +45,13 @@ void HSEPD::DeepSleep()
     return epd->DeepSleep();
 }
 
-bool HSEPD::DisplayFull(uint8_t *buffer)
+bool HSEPD::Display(uint8_t *buffer, uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t yEnd)
 {
-    return epd->DisplayFull(buffer);
-}
-
-void HSEPD::SetHardSPI(SPIClass *spi)
-{
-    return epd->SetHardSPI(spi);
+    uint16_t realXStart;
+    uint16_t realYStart;
+    uint16_t realXEnd;
+    uint16_t realYEnd;
+    ToRealPixel(xStart, yStart, realXStart, realYStart);
+    ToRealPixel(xEnd, yEnd, realXEnd, realYEnd);
+    return epd->Display(buffer, min(realXStart,realXEnd), max(realXStart,realXEnd), min(realYStart,realYEnd), max(realYStart,realYEnd));
 }

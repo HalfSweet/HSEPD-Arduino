@@ -139,11 +139,29 @@ void HSEPD_BASIC::WriteCMDDATA(uint8_t *value, uint8_t Datalen)
         SPIWrite(*ptemp);
         ptemp++;
     }
-    //WaitBUSY();
+    // WaitBUSY();
     _EPD_CS_HIGH;
 }
 
 void HSEPD_BASIC::SetHardSPI(SPIClass *spi)
 {
     EPDSPI = spi;
+}
+
+void HSEPD_BASIC::Gray4ArrConvert(uint32_t pixel, uint8_t *gary, uint8_t *data, uint8_t level)
+{
+    for (uint32_t i = 0; i < pixel; i++)
+    {
+        data[i] = 0x00; //若不初始化，则数据可能随机
+        for (int j = 0; j < 8; j++)
+        {
+            /*
+            *这段代码的大意就是在j<4，也就是需要灰度图数组的第一个字节的时候使得灰度数组所取的值为2*i，
+            *在需要第二个字节的时候所取的值为2*i+1。后面那一坨代表了取得一个字节中对应的那个bit，((j - (j / 4) * 4) * 2)
+            *代表了当j<4时，所得的值为实际的bit，*2代表了取得的比特是间断的，也就是取的是第一个灰度数组0 2 4 6这4个bit，
+            *当4<j<7的时候取得的为第二个灰度数组的0 2 4 6这几个bit。同理，当level为1的时候，取得的分别就是1 3 5 7这几个bit了
+            */
+            data[i] += ((gary[2 * i + (j / 4)] & (0x01 << (7 - ((j - (j / 4) * 4) * 2) - level))) >> (7 - ((j - (j / 4) * 4) * 2) - level)) << (7-j);
+        }
+    }
 }

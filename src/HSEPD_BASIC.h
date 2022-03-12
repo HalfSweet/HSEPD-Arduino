@@ -89,6 +89,20 @@ static const char *EPDTAG = "HSEPD";
 #define _EPD_SDA_HIGH digitalWrite(_SDA, HIGH)
 #define _READ_EPD_SDA digitalRead(_SDA)
 
+enum class EPDType //这个是整个驱动库里面支持的屏幕型号
+{
+    HINKE029A01 = 0,
+};
+
+enum class DisMode
+{
+    Full = 0,
+    Part = 1,
+    Gray4AloneFull = 2,
+    Gray4OverlapFull = 3,
+    Gray16Full = 4,
+};
+
 class HSEPD_BASIC
 {
 protected:
@@ -114,24 +128,30 @@ protected:
     void WriteDATA(uint8_t data);
     void WriteCMDDATA(uint8_t *value, uint8_t Datalen);
 
-    virtual bool WaitBUSY(uint32_t timeOut) = 0;
-    virtual void SetRamPointer(uint16_t addrX, uint8_t addrY, uint8_t addrY1) = 0;
-    virtual void SetRamArea(uint16_t Xstart, uint16_t Xend, uint8_t Ystart, uint8_t Ystart1, uint8_t Yend, uint8_t Yend1) = 0;
-    virtual void WriteDispRam(uint16_t XSize, uint16_t YSize, uint8_t *Dispbuff, uint16_t offset) = 0;
+    /**
+     * @brief 将4灰度的图片数组转化为对应等级的数组。假设四个像素灰度等级分别为0 1 2 3，
+     * 我们可以拆分为四组2bit的数据，分别为00 01 10 11.那么对应的两个寄存器的数据则为0 0 1 1和0 1 0 1
+     *
+     * @param pixel 需要转换的数组的大小
+     * @param data 转换之后的数组，需要注意在传入该参数之前必须保证该数组有足够的空间存放转换后的数据
+     * @param level 需要获取的不同寄存器的值
+     *
+     */
+    
 
 public:
     HSEPD_BASIC(bool SPIMode, uint8_t CS, uint8_t RST, uint8_t DC, uint8_t BUSY, uint8_t SCK, uint8_t SDA);
     ~HSEPD_BASIC();
     void SetHardSPI(SPIClass *spi);
     /********带virtual的均为在每个屏幕的类中实现的函数*********/
-    virtual void InitFull() = 0;
-    virtual void InitPart() = 0;
+    // virtual void InitFull() = 0;
+    // virtual void InitPart() = 0;
+    virtual void Init(DisMode disMode) = 0;
+    virtual bool Display(uint8_t *buffer, uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t yEnd) = 0;
+    virtual void Update() = 0;
     virtual void DeepSleep() = 0;
-    virtual bool DisplayFull(uint8_t *buffer) = 0;
-    virtual void FullUpdate() = 0;
-};
+    // virtual bool DisplayFull(uint8_t *buffer) = 0;
+    // virtual void UpdateFull() = 0;
 
-enum class EPDType
-{
-    HINKE029A01 = 0,
+    void Gray4ArrConvert(uint32_t pixel, uint8_t *gary, uint8_t *data, uint8_t level);
 };
