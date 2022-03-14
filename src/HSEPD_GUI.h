@@ -6,9 +6,6 @@
 #include <FS.h>
 #endif // !NOT_USE_FS
 
-#define SetBit(Bit, Num) (Bit |= (1 << (Num)))         //将对应的bit位置1
-#define ResBit(Bit, Num) (Bit &= ((1 << (Num)) ^ 255)) //将对应的bit位置0
-
 enum class ORIGIN /*屏幕原点位置*/
 {
     TL,
@@ -57,8 +54,6 @@ private:
 
     Gray _gray = Gray::Gray2; //屏幕的灰度，默认2灰度
 
-    
-
     int8_t UTF8toUNICODE(const uint8_t *utf8, uint16_t *unicode);
 
     /**
@@ -85,6 +80,8 @@ private:
     template <typename Type>
     friend HSEPD_GUI &operator<<(HSEPD_GUI &, Type);
 
+    bool DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color = -1);
+
 public:
     uint8_t *DisBuffer;
     HSEPD_GUI(/* args */);
@@ -109,10 +106,7 @@ public:
     bool DrawSoildCircle(uint16_t x, uint16_t y, uint16_t radius, int16_t color = -1);
     bool DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, int16_t color = -1, uint16_t lineWeidth = 1);
     bool DrawImageArr(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t *image);
-
-    bool DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color = -1);
 };
-
 template <typename Type>
 HSEPD_GUI &operator<<(HSEPD_GUI &epd, Type str)
 {

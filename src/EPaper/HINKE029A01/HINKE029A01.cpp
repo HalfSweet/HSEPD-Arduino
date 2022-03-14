@@ -42,51 +42,8 @@ void HINKE029A01::BasicInit()
 
     WriteCMD(0x11);
     WriteDATA(0x01);
-
-    /*WriteCMD(0x22);
-    WriteDATA(0xC0);
-
-    WriteCMD(0x20);*/
-}
-/*
-void HINKE029A01::InitFull()
-{
-    Init();
-    WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_Full, sizeof(HINKE029A01LUT::LUT_Full));
-
-    WriteCMD(0x22);
-    WriteDATA(0xC0);
-
-    WriteCMD(0x20);
-    EPD_LOGD("Init full finish.");
 }
 
-void HINKE029A01::InitPart()
-{
-    Init();
-    WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_Part, sizeof(HINKE029A01LUT::LUT_Part));
-
-    WriteCMD(0x22);
-    WriteDATA(0xC0);
-
-    WriteCMD(0x20);
-    EPD_LOGD("Init part finish.");
-}
-
-void HINKE029A01::UpdateFull()
-{
-    WriteCMD(0x22);
-    WriteDATA(0xC7);
-    WriteCMD(0x20);
-}
-
-void HINKE029A01::UpdatePart()
-{
-    WriteCMD(0x22);
-    WriteDATA(0xCF);
-    WriteCMD(0x20);
-}
-*/
 bool HINKE029A01::WaitBUSY(uint32_t timeOut)
 {
     uint32_t currentTime = millis();
@@ -119,13 +76,10 @@ void HINKE029A01::SetRamPointer(uint16_t addrX, uint8_t addrY, uint8_t addrY1)
     // Set RAM X address counter
     RamPointerX[0] = 0x4E;
     RamPointerX[1] = addrX;
-    // RamPointerX[1] = 0xff;
     // Set RAM Y address counter
     RamPointerY[0] = 0x4F;
     RamPointerY[1] = addrY;
     RamPointerY[2] = addrY1;
-    // RamPointerY[1] = 0x2b;
-    // RamPointerY[2] = 0x02;
 
     WriteCMDDATA(RamPointerX, sizeof(RamPointerX));
     WriteCMDDATA(RamPointerY, sizeof(RamPointerY));
@@ -163,7 +117,6 @@ void HINKE029A01::WriteDispRam(uint16_t XSize, uint16_t YSize, uint8_t *buffer, 
         for (int j = 0; j < XSize; j++)
         {
             SPIWrite(*buf);
-            // SPIWrite(0x11);
             buf++;
         }
         buf += xDot / 8 - XSize;
@@ -268,13 +221,13 @@ bool HINKE029A01::Display4GrayFull(uint8_t *buffer)
 
     SetRamPointer(xStart / 8, yEnd % 256, yEnd / 256);
     SetRamArea(xStart, xEnd, yEnd % 256, yEnd / 256, yStart % 256, yStart / 256);
-    Gray4ArrConvert(xDot / 8 * yDot, buffer, buf, 0);
+    GrayArrConvert(xDot / 8 * yDot, buffer, buf, 0);
     for (uint32_t i = 0; i < xDot / 8 * yDot; i++)
     {
         buf[i] = ~buf[i];
     }
     WriteDispRam(xDot / 8, yDot, buf, 0, 0x24);
-    Gray4ArrConvert(xDot / 8 * yDot, buffer, buf, 1);
+    GrayArrConvert(xDot / 8 * yDot, buffer, buf, 1);
     for (uint32_t i = 0; i < xDot / 8 * yDot; i++)
     {
         buf[i] = ~buf[i];
@@ -294,6 +247,79 @@ bool HINKE029A01::Display4GrayFull(uint8_t *buffer)
         EPD_LOGE("Dispaly 4 gray is timeout,takes %ldms", millis() - updateTime);
         return false;
     }
+}
+
+bool HINKE029A01::Display16GrayFull(uint8_t *buffer)
+{
+    uint16_t yStart = 0;
+    uint16_t yEnd = yDot - 1;
+    uint16_t xStart = 0;
+    uint16_t xEnd = xDot;
+    uint32_t temp = yStart;
+
+    yStart = yDot - 1 - yEnd;
+    yEnd = yDot - 1 - temp;
+
+    uint8_t *buf = new (std::nothrow) uint8_t[xDot / 8 * yDot];
+    if (buf == nullptr)
+    {
+        EPD_LOGE("You don't have enough memory.");
+        return false;
+    }
+
+    /* 写入第一个LUT，刷第一次 */
+    WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_16Gray_0, sizeof(HINKE029A01LUT::LUT_16Gray_0));
+    SetRamPointer(xStart / 8, yEnd % 256, yEnd / 256);
+    SetRamArea(xStart, xEnd, yEnd % 256, yEnd / 256, yStart % 256, yStart / 256);
+    GrayArrConvert(xDot / 8 * yDot, buffer, buf, 0, 4);
+    for (uint32_t i = 0; i < xDot / 8 * yDot; i++)
+    {
+        buf[i] = ~buf[i];
+    }
+    WriteDispRam(xDot / 8, yDot, buf, 0, 0x24);
+    GrayArrConvert(xDot / 8 * yDot, buffer, buf, 1, 4);
+    for (uint32_t i = 0; i < xDot / 8 * yDot; i++)
+    {
+        buf[i] = ~buf[i];
+    }
+    WriteDispRam(xDot / 8, yDot, buf, 0, 0x26);
+    uint32_t updateTime = millis();
+    Update(); //第一次刷新
+    if (WaitBUSY(20 * 1000ul) == false)
+    {
+        EPD_LOGE("Dispaly 4 gray is timeout,takes %ldms", millis() - updateTime);
+        return false;
+    }
+
+    WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_16Gray_1, sizeof(HINKE029A01LUT::LUT_16Gray_1));
+    SetRamPointer(xStart / 8, yEnd % 256, yEnd / 256);
+    SetRamArea(xStart, xEnd, yEnd % 256, yEnd / 256, yStart % 256, yStart / 256);
+    GrayArrConvert(xDot / 8 * yDot, buffer, buf, 2, 4);
+    for (uint32_t i = 0; i < xDot / 8 * yDot; i++)
+    {
+        buf[i] = ~buf[i];
+    }
+    WriteDispRam(xDot / 8, yDot, buf, 0, 0x24);
+    GrayArrConvert(xDot / 8 * yDot, buffer, buf, 3, 4);
+    for (uint32_t i = 0; i < xDot / 8 * yDot; i++)
+    {
+        buf[i] = ~buf[i];
+    }
+    WriteDispRam(xDot / 8, yDot, buf, 0, 0x26);
+    delete[] buf;
+
+    Update(); //第二次刷新
+    if (WaitBUSY(20 * 1000ul) == true)
+    {
+        EPD_LOGD("Dispaly 16 gray finish,takes %ldms", millis() - updateTime);
+        return true;
+    }
+    else
+    {
+        EPD_LOGE("Dispaly 4 gray is timeout,takes %ldms", millis() - updateTime);
+        return false;
+    }
+    return true;
 }
 
 void HINKE029A01::Init(DisMode disMode)
@@ -323,7 +349,8 @@ void HINKE029A01::Init(DisMode disMode)
         break;
 
     case DisMode::Gray16Full:
-        // 16灰等刷屏的时候再写波形
+        /* 16灰等刷屏的时候再写波形 */
+        return;
         break;
 
     default:
@@ -351,6 +378,9 @@ bool HINKE029A01::Display(uint8_t *buffer, uint16_t xStart, uint16_t xEnd, uint1
     case DisMode::Gray4OverlapFull:
         return Display4GrayFull(buffer);
         break;
+
+    case DisMode::Gray16Full:
+        return Display16GrayFull(buffer);
 
     default:
         return false;

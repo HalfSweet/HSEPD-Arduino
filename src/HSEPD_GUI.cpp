@@ -171,7 +171,12 @@ bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color)
         break;
 
     case Gray::Gray4:
-        if (color == -1)
+        if (color > 3)
+        {
+            EPD_LOGW("Please enter the correct color.");
+            return false;
+        }
+        else if (color == -1)
         {
             SetBit(DisBuffer[(x + y * _width) / 4], 7 - 2 * (x % 4));
             SetBit(DisBuffer[(x + y * _width) / 4], 7 - (2 * (x % 4) + 1));
@@ -201,10 +206,10 @@ bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color)
         }
         else if (color == -1)
         {
-            ResBit(DisBuffer[(x + y * _width) / 4], x % 2);
-            ResBit(DisBuffer[(x + y * _width) / 4], x % 2 + 1);
-            ResBit(DisBuffer[(x + y * _width) / 4], x % 2 + 2);
-            ResBit(DisBuffer[(x + y * _width) / 4], x % 2 + 3);
+            SetBit(DisBuffer[(x + y * _width) / 2], 7 - 4 * (x % 2));
+            SetBit(DisBuffer[(x + y * _width) / 2], 7 - (4 * (x % 2) + 1));
+            SetBit(DisBuffer[(x + y * _width) / 2], 7 - (4 * (x % 2) + 2));
+            SetBit(DisBuffer[(x + y * _width) / 2], 7 - (4 * (x % 2) + 3));
         }
         else
         {
@@ -212,11 +217,11 @@ bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color)
             {
                 if (((color & (0x01 << (7 - i))) >> (7 - i)) == 0)
                 {
-                    SetBit(DisBuffer[(x + y * _width) / 2], x % 4 + i);
+                    ResBit(DisBuffer[(x + y * _width) / 2], 7 - (4 * (x % 2) + 3 - i));
                 }
                 else
                 {
-                    ResBit(DisBuffer[(x + y * _width) / 2], x % 4 + i);
+                    SetBit(DisBuffer[(x + y * _width) / 2], 7 - (4 * (x % 2) + 3 - i));
                 }
             }
         }

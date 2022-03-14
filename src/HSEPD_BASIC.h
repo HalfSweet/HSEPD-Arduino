@@ -89,6 +89,10 @@ static const char *EPDTAG = "HSEPD";
 #define _EPD_SDA_HIGH digitalWrite(_SDA, HIGH)
 #define _READ_EPD_SDA digitalRead(_SDA)
 
+#define SetBit(Bit, Num) (Bit |= (1 << (Num)))         //将对应的bit位置1
+#define ResBit(Bit, Num) (Bit &= ((1 << (Num)) ^ 255)) //将对应的bit位置0
+#define GetBit(Bit, Num) ((Bit & (0x01 << (Num))) >> (Num)) //获取对应的bit位数值
+
 enum class EPDType //这个是整个驱动库里面支持的屏幕型号
 {
     HINKE029A01 = 0,
@@ -137,21 +141,25 @@ protected:
      * @param level 需要获取的不同寄存器的值
      *
      */
-    
 
 public:
     HSEPD_BASIC(bool SPIMode, uint8_t CS, uint8_t RST, uint8_t DC, uint8_t BUSY, uint8_t SCK, uint8_t SDA);
     ~HSEPD_BASIC();
     void SetHardSPI(SPIClass *spi);
     /********带virtual的均为在每个屏幕的类中实现的函数*********/
-    // virtual void InitFull() = 0;
-    // virtual void InitPart() = 0;
     virtual void Init(DisMode disMode) = 0;
     virtual bool Display(uint8_t *buffer, uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t yEnd) = 0;
     virtual void Update() = 0;
     virtual void DeepSleep() = 0;
-    // virtual bool DisplayFull(uint8_t *buffer) = 0;
-    // virtual void UpdateFull() = 0;
 
-    void Gray4ArrConvert(uint32_t pixel, uint8_t *gary, uint8_t *data, uint8_t level);
+    /**
+     * @brief 将灰度数组转为对应等级的单色数组
+     *
+     * @param pixel 屏幕的总像素数
+     * @param gary 要传入的灰度数组
+     * @param data 转换后的对应等级的单色数组
+     * @param level 需要转换的灰度等级
+     * @param grayLevel 总灰度等级，
+     */
+    void GrayArrConvert(uint32_t pixel, uint8_t *gary, uint8_t *data, uint8_t level, uint8_t grayLevel = 2);
 };
