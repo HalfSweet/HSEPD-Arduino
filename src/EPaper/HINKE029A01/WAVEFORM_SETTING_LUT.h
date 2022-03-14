@@ -22,17 +22,7 @@ namespace HINKE029A01LUT
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
             0x13, 0x14, 0x44, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            /* 10 wb  01 bw
-             * 10 H REPEAT 3
-             * 10 H 01 L REPEAT 1
-            * 10 H 01 L REPEAT 4
-            * 01 L REPEAT 1
-            * 10 H 01 L REPEAT 4
-            * 10 H 01 L REPEAT 4
-            * 01 L REPEAT 2
-
-
-            */
+            /**/
     };
 
     const uint8_t LUT_16Gray_0[] =

@@ -133,6 +133,8 @@ bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin, Gray ga
     _realHeight = height;
     _gray = gary;
 
+    ClearBuffer();
+
     EPD_LOGD("GUIBegin finish.");
     return true;
 }
@@ -160,6 +162,7 @@ bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color)
             break;
 
         case -1:
+        case 1:
             DisBuffer[(x + y * _width) / 8] &= ~(0x80 >> (x % 8));
             break;
 
@@ -215,7 +218,7 @@ bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color)
         {
             for (int i = 0; i < 4; i++)
             {
-                if (((color & (0x01 << (7 - i))) >> (7 - i)) == 0)
+                if (((color & (0x01 << i)) >> i) == 0)
                 {
                     ResBit(DisBuffer[(x + y * _width) / 2], 7 - (4 * (x % 2) + 3 - i));
                 }
@@ -435,22 +438,42 @@ bool HSEPD_GUI::DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, int16_
 bool HSEPD_GUI::DrawImageArr(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t *image)
 {
     uint8_t px = 0;
+    uint8_t bpp = 0; // bpp为一个字节中可以存的下多少个像素，例如2灰度可以存8个，4灰度可以存4个等
+    uint8_t color = 0;
+    switch (_gray)
+    {
+    case Gray::Gray2:
+        bpp = 8;
+        break;
+
+    case Gray::Gray4:
+        bpp = 4;
+        break;
+
+    case Gray::Gray16:
+        bpp = 2;
+        break;
+    }
     for (size_t cx = 0; cx < width; cx++)
     {
         for (size_t cy = 0; cy < height; cy++)
         {
-            if (cy % 8 == 0)
+            color = 0;
+            if (cy % bpp == 0)
             {
                 px = *image;
                 image++;
             }
-            if ((px & (0x01 << (7 - (cy % 8)))) >> (7 - (cy % 8)) == 1) //不要吐槽为什么那么长，看懂就行
+
+            for (int i = 0; i < 8 / bpp; i++)
             {
-                if (DrawPixel(x + cx, y + cy) == false)
-                {
-                    EPD_LOGW("Draw image fail.");
-                    return false;
-                }
+                color += GetBit(px, (7 - (8 / bpp) * (cy % bpp) - i)) << ((8 / bpp) - i - 1);
+            }
+
+            if (DrawPixel(x + cx, y + cy, color) == false)
+            {
+                EPD_LOGW("Draw image fail.");
+                return false;
             }
         }
     }
@@ -513,20 +536,28 @@ void HSEPD_GUI::FontBegin(const char *fontIndex, bool variable, uint8_t height, 
 
 int HSEPD_GUI::printf(uint16_t x, uint16_t y, const char *format, ...)
 {
+    va_list arg;
+    va_start(arg, format);
+    int a=printf(x, y, -1, format);
+    va_end(arg);
+    return a;
+}
+int HSEPD_GUI::printf(uint16_t x, uint16_t y, int16_t color ,const char *format, ...)
+{
     size_t num;
     va_list arg;
     va_start(arg, format);
     char *str = new char[_printfBufferLen]; //字符串缓冲区大小，默认64
     num = vsnprintf(str, _printfBufferLen, format, arg);
     va_end(arg);
-    putstr(&x, &y, str);
+    putstr(&x, &y, str,color);
     delete[] str;
 
     EPD_LOGD("Printf is success.");
     return num;
 }
 
-int HSEPD_GUI::putchar(uint16_t x, uint16_t y, uint16_t ch)
+int HSEPD_GUI::putchar(uint16_t x, uint16_t y, uint16_t ch, int16_t color)
 {
     uint16_t charSize;
     uint32_t offset;
@@ -552,7 +583,7 @@ int HSEPD_GUI::putchar(uint16_t x, uint16_t y, uint16_t ch)
     if (_fontVariable == 1)
     {
         fontWidth = *(data + 1); //默认不支持255像素以上的字体
-        if (DrawImageArr(x, y, fontWidth, _fontHeight, data + 2) == false)
+        if (DrawBWImageArrToGray(x, y, fontWidth, _fontHeight, data + 2, color) == false)
         {
             EPD_LOGW("Draw char fail.");
             return -1;
@@ -561,7 +592,7 @@ int HSEPD_GUI::putchar(uint16_t x, uint16_t y, uint16_t ch)
     else
     {
         fontWidth = _fontWidth;
-        if (DrawImageArr(x, y, _fontWidth, _fontHeight, data) == false)
+        if (DrawBWImageArrToGray(x, y, _fontWidth, _fontHeight, data, color) == false)
         {
             EPD_LOGW("Draw char fail.");
             return -1;
@@ -572,7 +603,8 @@ int HSEPD_GUI::putchar(uint16_t x, uint16_t y, uint16_t ch)
     return fontWidth;
 }
 
-int HSEPD_GUI::putstr(uint16_t *x, uint16_t *y, const char *str, bool nor)
+
+int HSEPD_GUI::putstr(uint16_t *x, uint16_t *y, const char *str,int16_t color, bool nor)
 {
     uint16_t disX = *x;
     uint16_t disY = *y;
@@ -598,7 +630,7 @@ int HSEPD_GUI::putstr(uint16_t *x, uint16_t *y, const char *str, bool nor)
             EPD_LOGW("Your string is not valid");
             return charSum;
         }
-        strWidth = putchar(disX, disY, unicodeCode);
+        strWidth = putchar(disX, disY, unicodeCode,color);
         if (disX + strWidth >= _realWidth) //如果已经没有位置塞下新的一个字符了,那就换行
         {
             disX = *x;
@@ -620,4 +652,30 @@ int HSEPD_GUI::putstr(uint16_t *x, uint16_t *y, const char *str, bool nor)
     *y = disY;
     EPD_LOGD("Draw string success.");
     return charSum;
+}
+
+bool HSEPD_GUI::DrawBWImageArrToGray(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t *image, int16_t color)
+{
+    uint8_t px = 0;
+    for (size_t cx = 0; cx < width; cx++)
+    {
+        for (size_t cy = 0; cy < height; cy++)
+        {
+            if (cy % 8 == 0)
+            {
+                px = *image;
+                image++;
+            }
+            if ((px & (0x01 << (7 - (cy % 8)))) >> (7 - (cy % 8)) == 1) //不要吐槽为什么那么长，看懂就行
+            {
+                if (DrawPixel(x + cx, y + cy,color) == false)
+                {
+                    EPD_LOGW("Draw image fail.");
+                    return false;
+                }
+            }
+        }
+    }
+    EPD_LOGD("Draw image success.");
+    return true;
 }

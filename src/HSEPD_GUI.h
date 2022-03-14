@@ -62,9 +62,11 @@ private:
      * @param x 开始的x坐标
      * @param y 开始的y坐标
      * @param ch 打印的字符编码（Unicode，且最大为0xFFFF）
+     * @param color 要打印字符的颜色
      * @return int 绘制的该字符的宽度
      */
-    int putchar(uint16_t x, uint16_t y, uint16_t ch);
+    int putchar(uint16_t x, uint16_t y, uint16_t ch,int16_t color = -1);
+
 
     /**
      * @brief 在屏幕缓存中画一个字符串
@@ -75,12 +77,14 @@ private:
      * @param nor 控制是否不打印%开头（用于printf中打印一般的字符串）
      * @return int 这个字符串中的uint8_t的个数
      */
-    int putstr(uint16_t *x, uint16_t *y, const char *str, bool nor = 0);
+    int putstr(uint16_t *x, uint16_t *y, const char *str, int16_t color = -1,bool nor = 0);
 
     template <typename Type>
     friend HSEPD_GUI &operator<<(HSEPD_GUI &, Type);
 
     bool DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color = -1);
+
+    bool DrawBWImageArrToGray(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t *image, int16_t color);
 
 public:
     uint8_t *DisBuffer;
@@ -98,6 +102,7 @@ public:
     void SetStreamCursor(uint16_t x, uint16_t y);
     // void FontEnd();
     int printf(uint16_t x, uint16_t y, const char *format, ...);
+    int printf(uint16_t x, uint16_t y, int16_t color ,const char *format, ...);
     bool DrawPixel(uint16_t x, uint16_t y, int16_t color = -1); //白色为0，黑色为-1，对应的灰度则为其数字，注意，最大灰度与-1的黑色等价
     bool DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, int16_t color = -1);
     bool DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0, uint16_t move1, uint16_t lineWeidth = 1, int16_t color = -1);
