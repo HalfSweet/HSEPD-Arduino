@@ -6,7 +6,10 @@
 #include <FS.h>
 #endif // !NOT_USE_FS
 
-enum class ORIGIN
+#define SetBit(Bit, Num) (Bit |= (1 << (Num)))         //将对应的bit位置1
+#define ResBit(Bit, Num) (Bit &= ((1 << (Num)) ^ 255)) //将对应的bit位置0
+
+enum class ORIGIN /*屏幕原点位置*/
 {
     TL,
     BL,
@@ -18,10 +21,11 @@ enum class ORIGIN
     BottomRight,
 };
 
-enum class COLOR
+enum class Gray
 {
-    write,
-    black,
+    Gray2 = 0,  //仅黑白
+    Gray4 = 1,  // 4灰度
+    Gray16 = 2, // 16灰度
 };
 
 class HSEPD_GUI
@@ -41,17 +45,19 @@ private:
     uint16_t _realWidth; //这两个都是真实的“窗口”的长宽
     uint16_t _realHeight;
 
-    uint8_t _fontWidth;
-    uint8_t _fontHeight;
-    bool _fontVariable;
-    const char *_fontIndex;
+    uint8_t _fontWidth;     //字体宽度
+    uint8_t _fontHeight;    //字体高度
+    bool _fontVariable;     //是否为等宽字体，0为定宽，1为等宽
+    const char *_fontIndex; //字体在文件系统中的名称
 
-    uint16_t _streamCursorX = 0;
+    uint16_t _streamCursorX = 0; //<<方式输出的坐标
     uint16_t _streamCursorY = 0;
 
-    uint16_t _printfBufferLen = 64;
+    uint16_t _printfBufferLen = 64; // printf的缓冲区大小
 
-    bool DrawAbsolutePixel(uint16_t x, uint16_t y, COLOR color = COLOR::black);
+    Gray _gray = Gray::Gray2; //屏幕的灰度，默认2灰度
+
+    
 
     int8_t UTF8toUNICODE(const uint8_t *utf8, uint16_t *unicode);
 
@@ -87,7 +93,7 @@ public:
     void SetOrigin(ORIGIN origin);
     ORIGIN GetOrigin();
     void SetFS(fs::FS *fs);
-    bool GUIBegin(uint16_t width, uint16_t height, ORIGIN origin = ORIGIN::TL); //默认原点在左上
+    bool GUIBegin(uint16_t width, uint16_t height, ORIGIN origin = ORIGIN::TL, Gray gary = Gray::Gray2); //默认原点在左上,2灰度
     void GUIEnd();
     void ClearBuffer();
     void FontBegin(const char *fontIndex, bool variable, uint8_t height, uint8_t width);
@@ -95,14 +101,16 @@ public:
     void SetStreamCursor(uint16_t x, uint16_t y);
     // void FontEnd();
     int printf(uint16_t x, uint16_t y, const char *format, ...);
-    bool DrawPixel(uint16_t x, uint16_t y, COLOR color = COLOR::black);
-    bool DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color = COLOR::black);
-    bool DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0, uint16_t move1, uint16_t lineWeidth = 1, COLOR color = COLOR::black);
-    bool DrawSolidBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, COLOR color = COLOR::black);
-    bool DrawHollowBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, uint16_t lineWeidth = 1);
-    bool DrawSoildCircle(uint16_t x, uint16_t y, uint16_t radius, COLOR color = COLOR::black);
-    bool DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, uint16_t lineWeidth = 1);
+    bool DrawPixel(uint16_t x, uint16_t y, int16_t color = -1); //白色为0，黑色为-1，对应的灰度则为其数字，注意，最大灰度与-1的黑色等价
+    bool DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, int16_t color = -1);
+    bool DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0, uint16_t move1, uint16_t lineWeidth = 1, int16_t color = -1);
+    bool DrawSolidBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, int16_t color = -1);
+    bool DrawHollowBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, int16_t color = -1, uint16_t lineWeidth = 1);
+    bool DrawSoildCircle(uint16_t x, uint16_t y, uint16_t radius, int16_t color = -1);
+    bool DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, int16_t color = -1, uint16_t lineWeidth = 1);
     bool DrawImageArr(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t *image);
+
+    bool DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color = -1);
 };
 
 template <typename Type>

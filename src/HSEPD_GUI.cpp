@@ -39,7 +39,7 @@ bool HSEPD_GUI::ToRealPixel(uint16_t x, uint16_t y, uint16_t &realX, uint16_t &r
             return false;
         }
         realX = _width - y - 1;
-        realY =  _height - x - 1;
+        realY = _height - x - 1;
         break;
 
     case ORIGIN::BR:
@@ -76,7 +76,7 @@ void HSEPD_GUI::SetFS(fs::FS *fs)
     EPDFs = fs;
 }
 
-bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin)
+bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin, Gray gary)
 {
     uint32_t pixel;
     if (height % 8 == 0)
@@ -87,7 +87,19 @@ bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin)
     {
         pixel = (height / 8 + 1) * width;
     }
+    switch (gary)
+    {
+    case Gray::Gray2: // 2灰度啥都不干，保持原状
+        break;
 
+    case Gray::Gray4: // 4灰度的话buffer宽度得*2
+        pixel *= 2;
+        break;
+
+    case Gray::Gray16: // 16灰度的话buffer宽度得*4
+        pixel *= 4;
+        break;
+    }
     DisBuffer = new (std::nothrow) uint8_t[pixel];
     if (DisBuffer == nullptr)
     {
@@ -119,6 +131,7 @@ bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin)
     SetOrigin(origin);
     _realWidth = width;
     _realHeight = height;
+    _gray = gary;
 
     EPD_LOGD("GUIBegin finish.");
     return true;
@@ -129,85 +142,92 @@ void HSEPD_GUI::GUIEnd()
     delete[] DisBuffer;
 }
 
-bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, COLOR color)
+bool HSEPD_GUI::DrawAbsolutePixel(uint16_t x, uint16_t y, int16_t color)
 {
     if (x >= _width || y >= _height)
     {
         EPD_LOGE("The coordinates you entered are outside the window.");
         return false;
     }
-    switch (color)
+
+    switch (_gray)
     {
-    case COLOR::write:
-        DisBuffer[(x + y * _width) / 8] |= 0x80 >> (x % 8);
+    case Gray::Gray2:
+        switch (color) //此处需要注意，白色为1，黑色为0
+        {
+        case 0:
+            DisBuffer[(x + y * _width) / 8] |= 0x80 >> (x % 8);
+            break;
+
+        case -1:
+            DisBuffer[(x + y * _width) / 8] &= ~(0x80 >> (x % 8));
+            break;
+
+        default:
+            EPD_LOGW("Please enter the correct color.");
+            return false;
+            break;
+        }
         break;
 
-    case COLOR::black:
-        DisBuffer[(x + y * _width) / 8] &= ~(0x80 >> (x % 8));
+    case Gray::Gray4:
+        if (color == -1)
+        {
+            SetBit(DisBuffer[(x + y * _width) / 4], 7 - 2 * (x % 4));
+            SetBit(DisBuffer[(x + y * _width) / 4], 7 - (2 * (x % 4) + 1));
+        }
+        else
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                if (((color & (0x01 << i)) >> i) == 0)
+                {
+                    ResBit(DisBuffer[(x + y * _width) / 4], 7 - (2 * (x % 4) + 1 - i));
+                }
+                else
+                {
+                    SetBit(DisBuffer[(x + y * _width) / 4], 7 - (2 * (x % 4) + 1 - i));
+                }
+            }
+        }
+
         break;
 
-    default:
+    case Gray::Gray16:
+        if (color > 15)
+        {
+            EPD_LOGW("Please enter the correct color.");
+            return false;
+        }
+        else if (color == -1)
+        {
+            ResBit(DisBuffer[(x + y * _width) / 4], x % 2);
+            ResBit(DisBuffer[(x + y * _width) / 4], x % 2 + 1);
+            ResBit(DisBuffer[(x + y * _width) / 4], x % 2 + 2);
+            ResBit(DisBuffer[(x + y * _width) / 4], x % 2 + 3);
+        }
+        else
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                if (((color & (0x01 << (7 - i))) >> (7 - i)) == 0)
+                {
+                    SetBit(DisBuffer[(x + y * _width) / 2], x % 4 + i);
+                }
+                else
+                {
+                    ResBit(DisBuffer[(x + y * _width) / 2], x % 4 + i);
+                }
+            }
+        }
         break;
     }
     // EPD_LOGV("Draw absolute pixel finish.");
     return true;
 }
 
-bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
+bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, int16_t color)
 {
-    //bool flag;
-    /*
-    switch (_origin)
-    {
-    case ORIGIN::TL:
-    case ORIGIN::TopLeft:
-        if (x >= _width || y >= _height)
-        {
-            // EPD_LOGE("The coordinates you entered are outside the window.");
-            return false;
-        }
-        flag = DrawAbsolutePixel(x, _height - y - 1, color);
-        break;
-
-    case ORIGIN::BL:
-    case ORIGIN::BottomLeft:
-        if (x >= _height || y >= _height)
-        {
-            // EPD_LOGE("The coordinates you entered are outside the window.");
-            return false;
-        }
-        flag = DrawAbsolutePixel(y, x, color);
-        break;
-
-    case ORIGIN::TR:
-    case ORIGIN::TopRight:
-        if (x >= _width || y >= _height)
-        {
-            // EPD_LOGE("The coordinates you entered are outside the window.");
-            return false;
-        }
-        flag = DrawAbsolutePixel(_width - y - 1, _height - x - 1, color);
-        break;
-
-    case ORIGIN::BR:
-    case ORIGIN::BottomRight:
-
-        if (x >= _height || y >= _width)
-        {
-            // EPD_LOGE("The coordinates you entered are outside the window.");
-            return false;
-        }
-        flag = DrawAbsolutePixel(_width - x - 1, y, color);
-        break;
-
-    default:
-        EPD_LOGE("Please enter correct coordinates.");
-        return false;
-        break;
-    }
-    // EPD_LOGV("Draw pixel finish.");
-    return flag;
-    */
     uint16_t realX;
     uint16_t realY;
     ToRealPixel(x, y, realX, realY);
@@ -216,13 +236,30 @@ bool HSEPD_GUI::DrawPixel(uint16_t x, uint16_t y, COLOR color)
 
 void HSEPD_GUI::ClearBuffer()
 {
-    for (size_t i = 0; i < (_width * _height / 8); i++)
+    uint8_t temp = 0;
+    uint8_t color = 0xFF;
+    switch (_gray)
     {
-        DisBuffer[i] = 0xFF;
+    case Gray::Gray2:
+        temp = 8;
+        color = 0xFF;
+        break;
+    case Gray::Gray4:
+        temp = 4;
+        color = 0x00;
+        break;
+    case Gray::Gray16:
+        temp = 2;
+        color = 0x00;
+        break;
+    }
+    for (size_t i = 0; i < (_width * _height / temp); i++)
+    {
+        DisBuffer[i] = color;
     }
 }
 
-bool HSEPD_GUI::DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color)
+bool HSEPD_GUI::DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, int16_t color)
 {
     /* Bresenham algorithm */
     int16_t dx = x1 - x0 >= 0 ? x1 - x0 : x0 - x1;
@@ -253,7 +290,7 @@ bool HSEPD_GUI::DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COL
     return true;
 }
 
-bool HSEPD_GUI::DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0, uint16_t move1, uint16_t lineWeidth, COLOR color)
+bool HSEPD_GUI::DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0, uint16_t move1, uint16_t lineWeidth, int16_t color)
 {
     uint16_t moveMin = min(move0, move1);
     uint16_t moveMax = max(move0, move1);
@@ -311,7 +348,7 @@ bool HSEPD_GUI::DrawStraightLine(bool direction, uint16_t fixed, uint16_t move0,
     return true;
 }
 
-bool HSEPD_GUI::DrawSolidBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, COLOR color)
+bool HSEPD_GUI::DrawSolidBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, int16_t color)
 {
     if (DrawStraightLine(1, x, y, y + height, weidth, color))
     {
@@ -321,24 +358,24 @@ bool HSEPD_GUI::DrawSolidBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t h
     return true;
 }
 
-bool HSEPD_GUI::DrawHollowBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, uint16_t lineWeidth)
+bool HSEPD_GUI::DrawHollowBox(uint16_t x, uint16_t y, uint16_t weidth, uint16_t height, int16_t color, uint16_t lineWeidth)
 {
     if (lineWeidth == 0)
     {
         EPD_LOGE("Stupid human, are you kidding me?");
         return false;
     }
-    if (DrawSolidBox(x, y, weidth, height, COLOR::black))
+    if (DrawSolidBox(x, y, weidth, height, color))
     {
         return false;
     }
-    DrawSolidBox(x + lineWeidth, y + lineWeidth, weidth - 2 * lineWeidth, height - 2 * lineWeidth, COLOR::write);
+    DrawSolidBox(x + lineWeidth, y + lineWeidth, weidth - 2 * lineWeidth, height - 2 * lineWeidth, 0);
 
     EPD_LOGD("Draw Hollow Box finish.");
     return true;
 }
 
-bool HSEPD_GUI::DrawSoildCircle(uint16_t x, uint16_t y, uint16_t radius, COLOR color)
+bool HSEPD_GUI::DrawSoildCircle(uint16_t x, uint16_t y, uint16_t radius, int16_t color)
 {
     /* Bresenham algorithm */
     int32_t x_pos = -radius;
@@ -380,13 +417,13 @@ bool HSEPD_GUI::DrawSoildCircle(uint16_t x, uint16_t y, uint16_t radius, COLOR c
     return true;
 }
 
-bool HSEPD_GUI::DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, uint16_t lineWeidth)
+bool HSEPD_GUI::DrawHollowCircle(uint16_t x, uint16_t y, uint16_t radius, int16_t color, uint16_t lineWeidth)
 {
-    if (DrawSoildCircle(x, y, radius, COLOR::black) == false)
+    if (DrawSoildCircle(x, y, radius, color) == false)
     {
         return false;
     }
-    DrawSoildCircle(x, y, radius - 2 * lineWeidth, COLOR::write);
+    DrawSoildCircle(x, y, radius - 2 * lineWeidth, 0);
     return true;
 }
 
