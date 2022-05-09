@@ -268,7 +268,7 @@ bool HINKE029A01::Display16GrayFull(uint8_t *buffer)
     }
 
     /* 写入第一个LUT，刷第一次 */
-    WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_16Gray_0, sizeof(HINKE029A01LUT::LUT_16Gray_0));
+    WriteCMDDATA((uint8_t *)HINKE029A01_LUT::LUT_16Gray_0, sizeof(HINKE029A01_LUT::LUT_16Gray_0));
     SetRamPointer(xStart / 8, yEnd % 256, yEnd / 256);
     SetRamArea(xStart, xEnd, yEnd % 256, yEnd / 256, yStart % 256, yStart / 256);
     GrayArrConvert(xDot / 8 * yDot, buffer, buf, 0, 4);
@@ -291,7 +291,7 @@ bool HINKE029A01::Display16GrayFull(uint8_t *buffer)
         return false;
     }
 
-    WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_16Gray_1, sizeof(HINKE029A01LUT::LUT_16Gray_1));
+    WriteCMDDATA((uint8_t *)HINKE029A01_LUT::LUT_16Gray_1, sizeof(HINKE029A01_LUT::LUT_16Gray_1));
     SetRamPointer(xStart / 8, yEnd % 256, yEnd / 256);
     SetRamArea(xStart, xEnd, yEnd % 256, yEnd / 256, yStart % 256, yStart / 256);
     GrayArrConvert(xDot / 8 * yDot, buffer, buf, 2, 4);
@@ -329,22 +329,22 @@ void HINKE029A01::Init(DisMode disMode)
     switch (disMode)
     {
     case DisMode::Full:
-        WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_Full, sizeof(HINKE029A01LUT::LUT_Full));
+        WriteCMDDATA((uint8_t *)HINKE029A01_LUT::LUT_Full, sizeof(HINKE029A01_LUT::LUT_Full));
         EPD_LOGD("Full init finish.");
         break;
 
     case DisMode::Part:
-        WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_Part, sizeof(HINKE029A01LUT::LUT_Part));
+        WriteCMDDATA((uint8_t *)HINKE029A01_LUT::LUT_Part, sizeof(HINKE029A01_LUT::LUT_Part));
         EPD_LOGD("Part init finish.");
         break;
 
     case DisMode::Gray4AloneFull:
-        WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_4Gray_Alone, sizeof(HINKE029A01LUT::LUT_4Gray_Alone));
+        WriteCMDDATA((uint8_t *)HINKE029A01_LUT::LUT_4Gray_Alone, sizeof(HINKE029A01_LUT::LUT_4Gray_Alone));
         EPD_LOGD("4gray alone init finish.");
         break;
 
     case DisMode::Gray4OverlapFull:
-        WriteCMDDATA((uint8_t *)HINKE029A01LUT::LUT_4Gray_Overlap, sizeof(HINKE029A01LUT::LUT_4Gray_Overlap));
+        WriteCMDDATA((uint8_t *)HINKE029A01_LUT::LUT_4Gray_Overlap, sizeof(HINKE029A01_LUT::LUT_4Gray_Overlap));
         EPD_LOGD("4gray overlap init finish.");
         break;
 

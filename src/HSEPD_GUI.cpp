@@ -12,7 +12,7 @@ bool HSEPD_GUI::ToRealPixel(uint16_t x, uint16_t y, uint16_t &realX, uint16_t &r
 {
     switch (_origin)
     {
-    case ORIGIN::TL:
+    //case ORIGIN::TL:
     case ORIGIN::TopLeft:
         if (x >= _width || y >= _height)
         {
@@ -22,7 +22,7 @@ bool HSEPD_GUI::ToRealPixel(uint16_t x, uint16_t y, uint16_t &realX, uint16_t &r
         realY = _height - y - 1;
         break;
 
-    case ORIGIN::BL:
+    //case ORIGIN::BL:
     case ORIGIN::BottomLeft:
         if (x >= _height || y >= _height)
         {
@@ -32,7 +32,7 @@ bool HSEPD_GUI::ToRealPixel(uint16_t x, uint16_t y, uint16_t &realX, uint16_t &r
         realY = x;
         break;
 
-    case ORIGIN::TR:
+    //case ORIGIN::TR:
     case ORIGIN::TopRight:
         if (x >= _width || y >= _height)
         {
@@ -42,7 +42,7 @@ bool HSEPD_GUI::ToRealPixel(uint16_t x, uint16_t y, uint16_t &realX, uint16_t &r
         realY = _height - x - 1;
         break;
 
-    case ORIGIN::BR:
+    //case ORIGIN::BR:
     case ORIGIN::BottomRight:
 
         if (x >= _height || y >= _width)
@@ -108,17 +108,17 @@ bool HSEPD_GUI::GUIBegin(uint16_t width, uint16_t height, ORIGIN origin, Gray ga
     }
     switch (origin)
     {
-    case ORIGIN::BL:
+    //case ORIGIN::BL:
     case ORIGIN::BottomLeft:
-    case ORIGIN::TR:
+    //case ORIGIN::TR:
     case ORIGIN::TopRight:
         _width = height;
         _height = width;
         break;
 
-    case ORIGIN::BR:
+    //case ORIGIN::BR:
     case ORIGIN::BottomRight:
-    case ORIGIN::TL:
+    //case ORIGIN::TL:
     case ORIGIN::TopLeft:
         _width = width;
         _height = height;
@@ -520,10 +520,11 @@ void HSEPD_GUI::SetPrintfBufferLen(uint16_t printfBufferLen)
     _printfBufferLen = printfBufferLen;
 }
 
-void HSEPD_GUI::SetStreamCursor(uint16_t x, uint16_t y)
+void HSEPD_GUI::SetStreamCursor(uint16_t x, uint16_t y,int16_t color)
 {
     _streamCursorX = x;
     _streamCursorY = y;
+    _streamColor = color;
 }
 
 void HSEPD_GUI::FontBegin(const char *fontIndex, bool variable, uint8_t height, uint8_t width) // variable为0说明是固定宽度，是1说明是可变宽度

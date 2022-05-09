@@ -14,46 +14,25 @@
 HSEPD EPD(0, CS, RST, DC, BUSY, CLK, DIN); //驱动库的实例化，此处为使用软件SPI
 const uint8_t city_icon[24] = {
     /* 0X01,0X01,0X0C,0X00,0X0C,0X00, */
-    0X00,
-    0X00,
-    0X1C,
-    0X00,
-    0X77,
-    0X00,
-    0X41,
-    0X80,
-    0X9C,
-    0X60,
-    0XA2,
-    0X30,
-    0XA2,
-    0X30,
-    0X9C,
-    0XC0,
-    0X41,
-    0X80,
-    0X77,
-    0X00,
-    0X1C,
-    0X00,
-    0X00,
-    0X00,
+    0X00, 0X00, 0X1C, 0X00, 0X77, 0X00, 0X41, 0X80, 0X9C, 0X60, 0XA2, 0X30, 0XA2, 0X30, 0X9C, 0XC0,
+    0X41, 0X80, 0X77, 0X00, 0X1C, 0X00, 0X00, 0X00,
+    /*  */
 };
 
 void setup()
 {
     Serial.begin(BAUD_SPEED);
-    SPI.begin();
-    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
     EPD.SetEpaperType(EPDType::HINKE029A01);
-    EPD.SetHardSPI(&SPI);
     LittleFS.begin();
     EPD.SetFS(&LittleFS);
-    EPD.InitFull();
-    EPD.GUIBegin(296,128,ORIGIN::BottomLeft);
+    EPD.Init();
+    EPD.GUIBegin(296, 128, ORIGIN::BottomLeft);
     EPD.ClearBuffer();
-    EPD.FontBegin("/font12", 1, 12,12);
-    EPD.printf(10, 10, "%s","Hello,World");
+    EPD.FontBegin("/font12", 1, 12, 12);
+    EPD.printf(0, 0, "%s", "Hello,World");
+    EPD.SetStreamCursor(14, 14, -1);
+    EPD << "流输出示例，"
+        << "整数：" << 114514 << "，浮点数：" << 191.9810;
     EPD.DrawImageArr(10, 30, 12, 12, (uint8_t *)city_icon);
     EPD.DisplayFull(EPD.DisBuffer);
     EPD.DeepSleep();

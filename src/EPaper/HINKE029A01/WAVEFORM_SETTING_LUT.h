@@ -1,5 +1,5 @@
 #pragma once
-namespace HINKE029A01LUT
+namespace HINKE029A01_LUT
 {
     const uint8_t LUT_Full[] =
         {

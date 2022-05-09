@@ -5,11 +5,13 @@
 #include <SPI.h>
 #endif // !NOT_USE_HARD_SPI
 
-#define DEBUG_ESP_PORT Serial //调试用，记得删
-#define DEBUG_ESP_CORE
+//#define DEBUG_ESP_PORT Serial //调试用，记得删
+//#define DEBUG_ESP_CORE
 
 #if defined(ESP32)
-#define CONFIG_ARDUHAL_ESP_LOG //使用ESP IDF的日志写法，Arduino的日志输出
+#ifndef CONFIG_ARDUHAL_ESP_LOG
+#define CONFIG_ARDUHAL_ESP_LOG 1 //使用ESP IDF的日志写法，Arduino的日志输出
+#endif
 #include <esp32-hal-log.h>
 static const char *EPDTAG = "HSEPD";
 #define EPD_LOGE(...) ESP_LOGE(EPDTAG, ##__VA_ARGS__)
@@ -89,13 +91,14 @@ static const char *EPDTAG = "HSEPD";
 #define _EPD_SDA_HIGH digitalWrite(_SDA, HIGH)
 #define _READ_EPD_SDA digitalRead(_SDA)
 
-#define SetBit(Bit, Num) (Bit |= (1 << (Num)))         //将对应的bit位置1
-#define ResBit(Bit, Num) (Bit &= ((1 << (Num)) ^ 255)) //将对应的bit位置0
+#define SetBit(Bit, Num) (Bit |= (1 << (Num)))              //将对应的bit位置1
+#define ResBit(Bit, Num) (Bit &= ((1 << (Num)) ^ 255))      //将对应的bit位置0
 #define GetBit(Bit, Num) ((Bit & (0x01 << (Num))) >> (Num)) //获取对应的bit位数值
 
 enum class EPDType //这个是整个驱动库里面支持的屏幕型号
 {
     HINKE029A01 = 0,
+    DEPG0750RWU790F30 = 1,
 };
 
 enum class DisMode
