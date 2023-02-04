@@ -32,7 +32,7 @@ protected:
     int8_t _sda;
 
 public:
-    ESP8266SoftSPI(int8_t dc, int8_t busy, int8_t cs = HSEPD_NOT_USE_PIN, int8_t sck = PIN_SPI_SCK, int8_t mosi = PIN_SPI_MOSI, int32_t speed = -1);
+    ESP8266SoftSPI(int8_t dc, int8_t busy, int8_t cs = HSEPD_NOT_USE_PIN, int8_t sck = PIN_SPI_SCK, int8_t mosi = PIN_SPI_MOSI);
     ~ESP8266SoftSPI();
 
     void Write(uint8_t value) override;

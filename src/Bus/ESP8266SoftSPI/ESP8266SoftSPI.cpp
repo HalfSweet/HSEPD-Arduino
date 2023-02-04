@@ -2,15 +2,23 @@
 
 #if defined(ARDUINO) && defined(ESP8266) // Arduino平台下
 
-ESP8266SoftSPI::ESP8266SoftSPI(int8_t dc, int8_t busy, int8_t cs, int8_t sck, int8_t sda, int32_t speed)
+ESP8266SoftSPI::ESP8266SoftSPI(int8_t dc, int8_t busy, int8_t cs, int8_t sck, int8_t sda)
     : HSEPD_BUS(),
       _dc(dc),
       _busy(busy),
       _cs(cs),
       _sck(sck),
       _sda(sda),
-      _speed(speed)
+      _speed(-1)
 {
+    if (_cs >= 0)
+    {
+        pinMode(_cs, OUTPUT);
+    }
+    pinMode(dc, OUTPUT);
+    pinMode(busy, INPUT);
+    pinMode(sck, OUTPUT);
+    pinMode(sda, OUTPUT);
 }
 
 ESP8266SoftSPI::~ESP8266SoftSPI()
