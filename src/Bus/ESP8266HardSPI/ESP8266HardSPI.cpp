@@ -1,7 +1,7 @@
 #include "ESP8266HardSPI.h"
 
-#if defined(ARDUINO) && defined(ESP8266)// Arduino平台下
-ESP8266HardSPI::ESP8266HardSPI(int8_t dc, int8_t busy, int8_t cs , int32_t speed,SPIClass *spi)
+#if defined(ARDUINO) && defined(ESP8266) // Arduino平台下
+ESP8266HardSPI::ESP8266HardSPI(int8_t dc, int8_t busy, int8_t cs, int32_t speed, SPIClass *spi)
     : HSEPD_BUS(),
       _dc(dc),
       _busy(busy),
@@ -16,7 +16,7 @@ ESP8266HardSPI::ESP8266HardSPI(int8_t dc, int8_t busy, int8_t cs , int32_t speed
     pinMode(dc, OUTPUT);
     pinMode(busy, INPUT);
 
-    if(_speed > 0)
+    if (_speed > 0)
     {
         _spi->setFrequency(_speed);
     }
