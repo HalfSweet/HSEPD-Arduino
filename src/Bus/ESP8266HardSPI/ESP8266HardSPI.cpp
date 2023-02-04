@@ -1,5 +1,6 @@
 #include "ESP8266HardSPI.h"
 
+#if defined(ARDUINO) && defined(ESP8266)// Arduino平台下
 ESP8266HardSPI::ESP8266HardSPI(int8_t dc, int8_t busy, int8_t cs , int32_t speed,SPIClass *spi)
     : HSEPD_BUS(),
       _dc(dc),
@@ -108,3 +109,5 @@ void ESP8266HardSPI::ReadData(uint8_t command, uint8_t dataLen, uint8_t *data)
 {
     // TODO
 }
+
+#endif

@@ -1,11 +1,10 @@
 #pragma once
 
-#if defined(ARDUINO) // Arduino平台下
+#include "../../HSEPD_BUS.h"
+
+#if defined(ARDUINO) && defined(ESP8266)// Arduino平台下
 #include <Arduino.h>
 #include <SPI.h> //因为是硬件SPI，所以加上SPI库
-#endif
-
-#include "../../HSEPD_BUS.h"
 
 const int32_t ESP8266_HARD_SPI_SPEED = 100000; // 通信的速度
 
@@ -39,3 +38,5 @@ public:
     uint8_t ReadData(uint8_t command) override;
     void ReadData(uint8_t command, uint8_t dataLen, uint8_t *data) override;
 };
+
+#endif
