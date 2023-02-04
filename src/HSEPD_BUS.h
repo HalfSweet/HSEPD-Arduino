@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #endif
 
+const int8_t HSEPD_NOT_USE_PIN = -1; // 未使用的引脚
+
 class HSEPD_BUS // 在这个类中仅仅实现数据总线的接口
 {
 private:
@@ -34,6 +36,14 @@ public:
      * @param data 需要写入的数据
      */
     virtual void WriteData(uint8_t data) = 0;
+
+    /**
+     * @brief 写dataLen个字节的数据
+     * 
+     * @param data 需要写入的数组首地址
+     * @param dataLen 需要写入的数组的总长度
+     */
+    virtual void WriteBytes(uint8_t *data, uint8_t dataLen) = 0;
 
     /**
      * @brief 写1个字节的命令，以及Datalen - 1个字节的数据
