@@ -19,6 +19,7 @@ ESP8266SoftSPI::ESP8266SoftSPI(int8_t dc, int8_t busy, int8_t cs, int8_t sck, in
     pinMode(busy, INPUT);
     pinMode(sck, OUTPUT);
     pinMode(sda, OUTPUT);
+    HSEPD_LOGD("ESP8266 soft SPI init success.")
 }
 
 ESP8266SoftSPI::~ESP8266SoftSPI()

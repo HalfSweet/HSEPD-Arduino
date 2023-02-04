@@ -20,6 +20,7 @@ ESP8266HardSPI::ESP8266HardSPI(int8_t dc, int8_t busy, int8_t cs, int32_t speed,
     {
         _spi->setFrequency(_speed);
     }
+    HSEPD_LOGD("ESP8266 hard SPI init success.")
 }
 
 ESP8266HardSPI::~ESP8266HardSPI()

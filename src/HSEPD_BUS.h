@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #endif
 
+#include "HSEPD_LOG.h"
+
 const int8_t HSEPD_NOT_USE_PIN = -1; // 未使用的引脚
 
 class HSEPD_BUS // 在这个类中仅仅实现数据总线的接口
