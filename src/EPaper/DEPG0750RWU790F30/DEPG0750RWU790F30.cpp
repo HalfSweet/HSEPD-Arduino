@@ -166,12 +166,12 @@ bool DEPG0750RWU790F30::DisplayPart(uint16_t xStart, uint16_t xEnd, uint16_t ySt
 
 bool DEPG0750RWU790F30::Display4GrayFull(uint8_t *buffer)
 {
-    ;
+    return false;
 }
 
 bool DEPG0750RWU790F30::Display16GrayFull(uint8_t *buffer)
 {
-    ;
+    return false;
 }
 
 void DEPG0750RWU790F30::Init(DisMode disMode)
